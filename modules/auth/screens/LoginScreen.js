@@ -10,7 +10,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       const res = await loginUser(email, password);
       console.log("Login success:", res.data);
-      navigation.replace("Dashboard"); // replace so user can’t go back
+      navigation.replace("Home"); // replace so user can’t go back
     } catch (err) {
       console.error("Login failed:", err.response?.data || err.message);
       Alert.alert("Error", "Invalid credentials");
