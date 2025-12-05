@@ -13,6 +13,7 @@ import { loginUser } from "../services/authService";
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -44,12 +45,12 @@ export default function LoginScreen({ navigation }) {
   //     const res = await loginUser(email, password);
 
   //     // console.log("LOGIN SUCCESS:", res.data);
-  //     window.alert("Login Successfully")
+  //     Alert.alert("Login Successfully")
 
   //     navigation.replace("Home");
   //   } catch (err) {
   //     // console.log("LOGIN FAILED:", err.response?.data);
-  //     window.alert("Oops, Login Failed")
+  //     Alert.alert("Oops, Login Failed")
 
   //     const message =
   //       err.response?.data?.message ||
@@ -84,7 +85,7 @@ export default function LoginScreen({ navigation }) {
     console.log("LOGIN FAILED:", err.response);
 
     // Default message
-    let message = "Something went wrong. Please try again.";
+    let message= "Something went wrong. Please try again.";
 
     if (err.response) {
       // Server responded
@@ -197,77 +198,3 @@ const styles = StyleSheet.create({
 
 
 
-//----------------------------------------------------------------------
-
-// import React, { useState } from "react";
-// import { View, TextInput, TouchableOpacity, Text, StyleSheet } from "react-native";
-// import { loginUser } from "../services/authService";
-
-// const LoginScreen = ({ navigation }) => {
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [errorMessage, setErrorMessage] = useState("");
-
-//   const handleLogin = async () => {
-//     setErrorMessage(""); // Reset error when retry
-
-//     try {
-//       const res = await loginUser(email, password);
-//       console.log("Login success:", res.data);
-//       navigation.replace("Home");
-//     } catch (err) {
-//       console.error("Login failed:", err.response?.data || err.message);
-
-//       const message =
-//         err.response?.data?.message || "Invalid email or password";
-
-//       setErrorMessage(message); // Show error on screen
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Login</Text>
-
-//       <TextInput
-//         placeholder="Email"
-//         style={styles.input}
-//         value={email}
-//         onChangeText={setEmail}
-//       />
-
-//       <TextInput
-//         placeholder="Password"
-//         secureTextEntry
-//         style={styles.input}
-//         value={password}
-//         onChangeText={setPassword}
-//       />
-
-//       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-//         <Text style={styles.buttonText}>Login</Text>
-//       </TouchableOpacity>
-
-//       {errorMessage ? (
-//         <Text style={styles.errorText}>{errorMessage}</Text>
-//       ) : null}
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, justifyContent: "center", padding: 20 },
-//   title: { fontSize: 24, fontWeight: "700", marginBottom: 20, textAlign: "center" },
-//   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 12, marginVertical: 8 },
-//   button: { backgroundColor: "#000", padding: 15, borderRadius: 10, marginTop: 10 },
-//   buttonText: { color: "#fff", textAlign: "center", fontWeight: "600" },
-
-//   errorText: {
-//     color: "red",
-//     marginTop: 10,
-//     textAlign: "center",
-//     fontWeight: "600",
-//   },
-// });
-
-// export default LoginScreen;
