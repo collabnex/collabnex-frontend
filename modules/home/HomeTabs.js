@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 // Your existing screens
 import ShowcaseScreen from "./screens/ShowcaseScreen";
@@ -19,9 +20,35 @@ function DashboardScreen() {
     );
 }
 
+
+        
 export default function HomeTabs() {
     return (
-        <Tab.Navigator screenOptions={{ headerShown: false }}>
+         <Tab.Navigator
+            screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarActiveTintColor: "#007bff",
+                tabBarInactiveTintColor: "gray",
+                tabBarIcon: ({ focused, size, color }) => {
+                    let iconName;
+
+                    if (route.name === "Dashboard") {
+                        iconName = focused ? "home" : "home-outline";
+                    } else if (route.name === "Showcase") {
+                        iconName = focused ? "images" : "images-outline";
+                    } else if (route.name === "Market") {
+                        iconName = focused ? "cart" : "cart-outline";
+                    } else if (route.name === "Collab") {
+                        iconName = focused ? "people" : "people-outline";
+                    } else if (route.name === "Events") {
+                        iconName = focused ? "calendar" : "calendar-outline";
+                    }
+
+                    return <Ionicons name={iconName} size={20} color={color} />;
+                },
+            })}
+        >
+
             <Tab.Screen name="Dashboard" component={DashboardScreen} />
             <Tab.Screen name="Showcase" component={ShowcaseScreen} />
             <Tab.Screen name="Market" component={MarketplaceScreen} />
