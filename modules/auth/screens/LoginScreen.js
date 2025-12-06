@@ -13,105 +13,82 @@ import { loginUser } from "../services/authService";
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [backendError, setBackendError] = useState("");
 
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [backendError, setBackendError] = useState("");
 
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (text) => {
-    setEmail(text);
-    const emailRegex = /\S+@\S+\.\S+/;
-    setEmailError(emailRegex.test(text) ? "" : "Invalid email format");
-  };
+  const lower = text.toLowerCase(); 
+  setEmail(lower);
+
+  const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+  if (!emailRegex.test(lower)) {
+    setEmailError("Invalid email format");
+  } else {
+    setEmailError("");
+  }
+};
 
   const validatePassword = (text) => {
     setPassword(text);
     setPasswordError(text.length >= 6 ? "" : "Password must be 6+ characters");
   };
 
-  // const handleLogin = async () => {
-  //   setBackendError("");
-
-  //   if (!email || !password || emailError || passwordError) {
-  //     setBackendError("Please fix all errors before submitting");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     const res = await loginUser(email, password);
-
-  //     // console.log("LOGIN SUCCESS:", res.data);
-  //     Alert.alert("Login Successfully")
-
-  //     navigation.replace("Home");
-  //   } catch (err) {
-  //     // console.log("LOGIN FAILED:", err.response?.data);
-  //     Alert.alert("Oops, Login Failed")
-
-  //     const message =
-  //       err.response?.data?.message ||
-  //       "Invalid email or password. Please try again.";
-
-  //     setBackendError(message);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  // 👉 BUTTON DISABLED CONDITION
+  const isButtonDisabled =
+    !email ||
+    !password ||
+    emailError ||
+    passwordError ||
+    loading;
 
   const handleLogin = async () => {
-  setBackendError("");
+    setBackendError("");
 
-  const trimmedEmail = email.trim();
-  const trimmedPassword = password.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
 
-  if (!trimmedEmail || !trimmedPassword || emailError || passwordError) {
-    setBackendError("Please fix all errors before submitting");
-    Alert.alert("Login Failed", "Please fix all errors before submitting");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    const res = await loginUser(trimmedEmail, trimmedPassword);
-
-    // Login success
-    Alert.alert("Success", "Login Successfully");
-    navigation.replace("Home");
-  } catch (err) {
-    console.log("LOGIN FAILED:", err.response);
-
-    // Default message
-    let message= "Something went wrong. Please try again.";
-
-    if (err.response) {
-      // Server responded
-      const status = err.response.status;
-
-      if (status === 404) {
-        message = "User not found"; // Displayed in alert
-      } else if (status === 401) {
-        message = "Invalid email or password";
-      } else if (err.response.data?.message) {
-        message = err.response.data.message;
-      }
-    } else if (err.request) {
-      // No response from server
-      message = "Server not reachable. Check your connection.";
-    } else {
-      // Other errors
-      message = err.message;
+    if (!trimmedEmail || !trimmedPassword || emailError || passwordError) {
+      const msg = "Please fix all errors before submitting";
+      setBackendError(msg);
+      Alert.alert("Login Failed", msg);
+      return;
     }
 
-    setBackendError(message);
-    Alert.alert("Login Failed", message); // Show backend error in alert
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      const res = await loginUser(trimmedEmail, trimmedPassword);
+
+      Alert.alert("Success", "Login Successfully");
+      navigation.replace("Home");
+    } catch (err) {
+      console.log("LOGIN FAILED:", err.response);
+
+      let message = "Something went wrong. Please try again.";
+
+      if (err.response) {
+        const status = err.response.status;
+
+        if (status === 404) message = "User not found";
+        else if (status === 401) message = "Invalid email or password";
+        else if (err.response.data?.message) message = err.response.data.message;
+      } else if (err.request) {
+        message = "Server not reachable. Check your connection.";
+      } else {
+        message = err.message;
+      }
+
+      setBackendError(message);
+      Alert.alert("Login Failed", message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Login</Text>
@@ -137,7 +114,12 @@ export default function LoginScreen({ navigation }) {
         <Text style={[styles.error, { marginTop: 10 }]}>{backendError}</Text>
       ) : null}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+      {/* LOGIN BUTTON WITH DISABLE FEATURE */}
+      <TouchableOpacity
+        style={[styles.button, isButtonDisabled && styles.disabledButton]}
+        onPress={handleLogin}
+        disabled={isButtonDisabled}
+      >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -183,6 +165,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
   },
+  disabledButton: {
+    backgroundColor: "#999",
+  },
   buttonText: {
     color: "#fff",
     fontSize: 18,
@@ -193,8 +178,5 @@ const styles = StyleSheet.create({
     color: "#007bff",
   },
 });
-
-
-
 
 
