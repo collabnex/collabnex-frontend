@@ -6,6 +6,8 @@ import LoginScreen from "../auth/screens/LoginScreen";
 import DashboardScreen from "../home/screens/dashboard";
 import HomeTabs from "../home/HomeTabs";
 
+
+
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (

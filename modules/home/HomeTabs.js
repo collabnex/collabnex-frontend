@@ -8,6 +8,9 @@ import MarketplaceScreen from "./screens/MarketplaceScreen";
 import CollaborationScreen from "./screens/CollaborationScreen";
 import EventsScreen from "./screens/EventsScreen";
 
+import MarketNavigator from "../marketplace/MarketNavigator";
+
+
 const Tab = createBottomTabNavigator();
 
 function DashboardScreen() {
@@ -77,9 +80,10 @@ export default function HomeTabs() {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Showcase" component={ShowcaseScreen} />
-      <Tab.Screen name="Market" component={MarketplaceScreen} />
+      <Tab.Screen name="Market" component={MarketNavigator} />
       <Tab.Screen name="Collab" component={CollaborationScreen} />
       <Tab.Screen name="Events" component={EventsScreen} />
+      
     </Tab.Navigator>
   );
 }
