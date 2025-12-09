@@ -16,7 +16,7 @@ import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 
-const BASE_URL = 'http://192.168.29.150:8080/api';
+const BASE_URL = 'http://localhost:8080/api';
 const categories = ['Web Development', 'Design', 'Marketing', 'Writing', 'Other'];
 
 const SellServiceScreen = () => {
@@ -37,14 +37,14 @@ const SellServiceScreen = () => {
   useEffect(() => {
     const newErrors = {};
     if (!title.trim()) {
-  newErrors.title = "Title is required";
-} else if (title.trim().length < 3) {
-  newErrors.title = "Title must be at least 3 characters";
-} else if (title.trim().length > 50) {
-  newErrors.title = "Title cannot exceed 50 characters";
-} else if (!/^[A-Za-z0-9 ,\-]+$/.test(title.trim())) {
-  newErrors.title = "Invalid characters in title";
-}
+      newErrors.title = "Title is required";
+    } else if (title.trim().length < 3) {
+      newErrors.title = "Title must be at least 3 characters";
+    } else if (title.trim().length > 50) {
+      newErrors.title = "Title cannot exceed 50 characters";
+    } else if (!/^[A-Za-z0-9 ,\-]+$/.test(title.trim())) {
+      newErrors.title = "Invalid characters in title";
+    }
     if (!description.trim()) newErrors.description = 'Description is required';
 
     if (!price.trim()) newErrors.price = 'Price is required';
@@ -143,38 +143,38 @@ const SellServiceScreen = () => {
 
       {/* Title */}
       <Text style={styles.label}>Title</Text>
-<TextInput
-  style={[styles.input, errors.title && styles.errorInput]}
-  placeholder="Enter service title"
-  value={title}
-  onChangeText={(value) => {
-    // ❌ Prevent leading space
-    if (value.startsWith(" ")) return;
+      <TextInput
+        style={[styles.input, errors.title && styles.errorInput]}
+        placeholder="Enter service title"
+        value={title}
+        onChangeText={(value) => {
+          // ❌ Prevent leading space
+          if (value.startsWith(" ")) return;
 
-    // ❌ Block invalid characters in real-time
-    const allowed = /^[A-Za-z0-9 ,\-]*$/;
-    if (!allowed.test(value)) {
-      setErrors((prev) => ({
-        ...prev,
-        title: "Only letters, numbers, spaces, comma & hyphen allowed",
-      }));
-      return;
-    }
+          // ❌ Block invalid characters in real-time
+          const allowed = /^[A-Za-z0-9 ,\-]*$/;
+          if (!allowed.test(value)) {
+            setErrors((prev) => ({
+              ...prev,
+              title: "Only letters, numbers, spaces, comma & hyphen allowed",
+            }));
+            return;
+          }
 
-    // ❌ Remove double spaces
-    let formatted = value.replace(/\s\s+/g, " ");
+          // ❌ Remove double spaces
+          let formatted = value.replace(/\s\s+/g, " ");
 
-    // ✨ Auto Capitalize Each Word
-    formatted = formatted.replace(/\b\w/g, (char) => char.toUpperCase());
+          // ✨ Auto Capitalize Each Word
+          formatted = formatted.replace(/\b\w/g, (char) => char.toUpperCase());
 
-    // Update input
-    setTitle(formatted);
+          // Update input
+          setTitle(formatted);
 
-    // Clear error if valid
-    setErrors((prev) => ({ ...prev, title: "" }));
-  }}
-/>
-{errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+          // Clear error if valid
+          setErrors((prev) => ({ ...prev, title: "" }));
+        }}
+      />
+      {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
 
 
       {/* Description */}
