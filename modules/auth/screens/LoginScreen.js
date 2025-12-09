@@ -9,6 +9,11 @@ import {
   Alert,
 } from "react-native";
 import { loginUser } from "../services/authService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import CreateProfile from "./CreateProfile";
+
+
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -38,7 +43,6 @@ export default function LoginScreen({ navigation }) {
     setPasswordError(text.length >= 6 ? "" : "Password must be 6+ characters");
   };
 
-  // 👉 BUTTON DISABLED CONDITION
   const isButtonDisabled =
     !email ||
     !password ||
@@ -62,9 +66,35 @@ export default function LoginScreen({ navigation }) {
     try {
       setLoading(true);
       const res = await loginUser(trimmedEmail, trimmedPassword);
-
+      const token = res.data.data.token; 
+      await AsyncStorage.setItem("token", token);
       Alert.alert("Success", "Login Successfully");
-      navigation.replace("Home");
+      // navigation.replace("Home");
+      try {
+        const profileRes = await axios.get("http://localhost:8080/api/users/me/profile",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const profile = profileRes.data.data;
+
+       //  IF BIO EXISTS → PROFILE ALREADY CREATED
+        if (profile && profile.bio && profile.bio.trim() !== "") {
+        navigation.replace("Home");  // Dashboard
+        } 
+       //  IF BIO DOES NOT EXIST → CREATE PROFILE
+        else {
+        navigation.replace("CreateProfile");
+        }
+      } 
+      catch (profileErr) {
+        console.log("PROFILE CHECK ERROR:", profileErr.response?.data);
+        navigation.replace("CreateProfile"); // fallback for new users
+      }
+
+
+
+      
     } catch (err) {
       console.log("LOGIN FAILED:", err.response);
 
