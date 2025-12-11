@@ -20,13 +20,16 @@ const SignupScreen = ({ navigation }) => {
 
   // ⛔ Full Name Validation — Only Alphabets Allowed
   const validateFullName = (text) => {
-    setFullName(text);
+    // Remove all characters except alphabets & spaces
+    const filtered = text.replace(/[^A-Za-z ]/g, "");
+
+    setFullName(filtered);
 
     const nameRegex = /^[A-Za-z ]+$/;
 
-    if (text.length < 3) {
+    if (filtered.length < 3) {
       setFullNameError("Full name must be at least 3 characters");
-    } else if (!nameRegex.test(text)) {
+    } else if (!nameRegex.test(filtered)) {
       setFullNameError("Only alphabets and spaces are allowed");
     } else {
       setFullNameError("");
@@ -35,18 +38,17 @@ const SignupScreen = ({ navigation }) => {
 
   // Email validation
   const validateEmail = (text) => {
-  const lower = text.toLowerCase(); 
-  setEmail(lower);
+    const lower = text.toLowerCase();
+    setEmail(lower);
 
-  const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
 
-  if (!emailRegex.test(lower)) {
-    setEmailError("Invalid email format");
-  } else {
-    setEmailError("");
-  }
-};
-
+    if (!emailRegex.test(lower)) {
+      setEmailError("Invalid email format");
+    } else {
+      setEmailError("");
+    }
+  };
 
   // Password validation
   const validatePassword = (text) => {
@@ -64,12 +66,19 @@ const SignupScreen = ({ navigation }) => {
 
   const handleSignup = async () => {
     if (!isFormValid) {
-      Alert.alert("Error", "Please fill all fields correctly before submitting.");
+      Alert.alert(
+        "Error",
+        "Please fill all fields correctly before submitting."
+      );
       return;
     }
 
     try {
-      const res = await registerUser(fullName.trim(), email.trim(), password.trim());
+      const res = await registerUser(
+        fullName.trim(),
+        email.trim(),
+        password.trim()
+      );
       Alert.alert("Success", "Account created successfully!");
       navigation.navigate("Login");
     } catch (err) {
@@ -136,7 +145,12 @@ const SignupScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 26, fontWeight: "700", marginBottom: 25, textAlign: "center" },
+  title: {
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 25,
+    textAlign: "center",
+  },
   label: { fontWeight: "600", marginBottom: 5 },
   input: {
     borderWidth: 1,
@@ -166,4 +180,3 @@ const styles = StyleSheet.create({
 });
 
 export default SignupScreen;
-
