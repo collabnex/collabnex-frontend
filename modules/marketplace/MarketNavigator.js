@@ -6,6 +6,7 @@ import SellProduct from "./screens/sellProduct";
 import SellServices from "./screens/sellServices";
 import MyOrders from "./screens/myOrdersScreen";
 
+
 const Stack = createNativeStackNavigator();
 
 export default function MarketNavigator() {
@@ -18,6 +19,7 @@ export default function MarketNavigator() {
       <Stack.Screen name="SellProduct" component={SellProduct} />
       <Stack.Screen name="SellServices" component={SellServices} />
       <Stack.Screen name="MyOrders" component={MyOrders} />
+      
     </Stack.Navigator>
   );
 }
