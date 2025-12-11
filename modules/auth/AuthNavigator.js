@@ -8,6 +8,10 @@ import CreateProfile from "../auth/screens/CreateProfile";
 import DashboardScreen from "../home/screens/dashboard";
 import HomeTabs from "../home/HomeTabs";
 
+import BuyNow from "../marketplace/screens/BuyNow";
+
+import ShowcaseScreen from "../home/screens/ShowcaseScreen";
+
 
 
 const Stack = createNativeStackNavigator();
@@ -20,6 +24,8 @@ const AuthNavigator = () => (
     <Stack.Screen name="CreateProfile" component={CreateProfile} />
     <Stack.Screen name="Dashboard" component={DashboardScreen} />
     <Stack.Screen name="Home" component={HomeTabs} />
+   <Stack.Screen name="Showcase" component={ShowcaseScreen} />
+    <Stack.Screen name="BuyNow" component={BuyNow} /> 
   </Stack.Navigator>
 );
 
