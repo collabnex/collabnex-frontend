@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../../global/services/env";
 
  
 
 
-const baseURL = "http://localhost:8080";  // ← replace with your backend IP
+
 
 export default function ShowcaseScreen({ navigation}) {
   const [products, setProducts] = useState([]);
@@ -20,7 +21,7 @@ export default function ShowcaseScreen({ navigation}) {
     try {
       const token = await AsyncStorage.getItem("token");
 
-      const res = await axios.get(`${baseURL}/api/physical-products`, {
+      const res = await axios.get(`${API_BASE_URL}/api/physical-products`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -41,7 +42,7 @@ export default function ShowcaseScreen({ navigation}) {
     <View style={styles.card}>
       {item.imagePath && (
         <Image
-          source={{ uri: `${baseURL}/${item.imagePath}` }}
+          source={{ uri: `${API_BASE_URL}/${item.imagePath}` }}
           style={styles.image}
         />
       )}

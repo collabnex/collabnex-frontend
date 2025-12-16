@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const baseURL = "http://localhost:8080"; // Android emulator
+import { API_BASE_URL } from "../../global/services/env";
 
 export default function MyOrdersScreen() {
   const [orders, setOrders] = useState([]);
@@ -22,7 +21,7 @@ export default function MyOrdersScreen() {
         return;
       }
 
-      const response = await axios.get(`${baseURL}/api/orders/all`, {
+      const response = await axios.get(`${API_BASE_URL}/api/orders/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

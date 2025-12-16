@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../../global/services/env";
 
-const BASE_URL = "http://localhost:8080";
 
 const BuyNowScreen = ({ route, navigation }) => {
   const { serviceProductId, title } = route.params; // 🔥 dynamic ID
@@ -69,7 +69,7 @@ const BuyNowScreen = ({ route, navigation }) => {
         message,
       };
 
-      const url = `${BASE_URL}/api/service-enquiries/${serviceProductId}`;
+      const url = `${API_BASE_URL}/api/service-enquiries/${serviceProductId}`;
 
       console.log("URL:", url);
       console.log("Payload:", payload);

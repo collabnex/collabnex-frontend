@@ -2,12 +2,10 @@ import React, { useState } from "react";
 import { Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import CreateProfile from "./CreateProfile";
+import { API_BASE_URL } from "../../global/services/env";
 
-import { loginUser } from "../services/authService";
-import AuthLayout from "../components/AuthLayout";
-import AuthInput from "../components/AuthInput";
-import AuthButton from "../components/AuthButton";
-import { Colors } from "../../global/theme/colors";
+
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -15,7 +13,30 @@ export default function LoginScreen({ navigation }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const isDisabled = !email || !password || loading;
+  const validateEmail = (text) => {
+    const lower = text.toLowerCase();
+    setEmail(lower);
+
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+    if (!emailRegex.test(lower)) {
+      setEmailError("Invalid email format");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  const validatePassword = (text) => {
+    setPassword(text);
+    setPasswordError(text.length >= 6 ? "" : "Password must be 6+ characters");
+  };
+
+  const isButtonDisabled =
+    !email ||
+    !password ||
+    !!emailError ||
+    !!passwordError ||
+    loading;
 
   const handleLogin = async () => {
     try {
@@ -30,8 +51,10 @@ export default function LoginScreen({ navigation }) {
       // check profile
       try {
         const profileRes = await axios.get(
-          "http://localhost:8080/api/users/me/profile",
-          { headers: { Authorization: `Bearer ${token}` } }
+          `${API_BASE_URL}/users/me/profile`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
 
         const profile = profileRes.data.data;
