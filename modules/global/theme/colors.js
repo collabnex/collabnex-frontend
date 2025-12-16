@@ -1,11 +1,13 @@
-export default {
-  primary: '#3B82F6',
-  secondary: '#1E3A8A',
-  white: '#FFFFFF',
-  black: '#000000',
-  background: '#F9FAFB',
-  textGray: '#4B5563',
-  error: '#DC2626',
-  success: '#16A34A',
-  border: '#E5E7EB',
+export const Colors = {
+  primary: "#592FE4",
+  secondary: "#8F7BFF",
+
+  background: "#F8F7FF",
+  white: "#FFFFFF",
+
+  textPrimary: "#1E1E2E",
+  textSecondary: "#6B6B80",
+
+  border: "#E5E4F0",
+  error: "#E53935",
 };
