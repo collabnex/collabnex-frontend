@@ -1,51 +1,69 @@
 import React, { useState } from "react";
-import { Text, StyleSheet } from "react-native";
+import {
+  Text,
+  StyleSheet,
+  Alert,
+} from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import CreateProfile from "./CreateProfile";
+
+import { loginUser } from "../services/authService";
 import { API_BASE_URL } from "../../global/services/env";
+import { Colors } from "../../global/theme/colors";
 
-
+// custom components
+import AuthLayout from "../components/AuthLayout";
+import AuthInput from "../components/AuthInput";
+import AuthButton from "../components/AuthButton";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ================= VALIDATION =================
 
   const validateEmail = (text) => {
     const lower = text.toLowerCase();
     setEmail(lower);
 
     const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-
-    if (!emailRegex.test(lower)) {
-      setEmailError("Invalid email format");
-    } else {
-      setEmailError("");
-    }
+    setEmailError(emailRegex.test(lower) ? "" : "Invalid email format");
   };
 
   const validatePassword = (text) => {
     setPassword(text);
-    setPasswordError(text.length >= 6 ? "" : "Password must be 6+ characters");
+    setPasswordError(
+      text.length >= 6 ? "" : "Password must be 6+ characters"
+    );
   };
 
-  const isButtonDisabled =
+  const isDisabled =
     !email ||
     !password ||
     !!emailError ||
     !!passwordError ||
     loading;
 
+  // ================= LOGIN =================
+
   const handleLogin = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const res = await loginUser(email.trim(), password.trim());
-      const token = res.data.data.token;
+      const res = await loginUser(
+        email.trim(),
+        password.trim()
+      );
 
+      const token = res.data.data.token;
       await AsyncStorage.setItem("token", token);
 
       // check profile
@@ -73,6 +91,8 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  // ================= UI =================
+
   return (
     <AuthLayout>
       <Text style={styles.title}>Welcome Back</Text>
@@ -83,7 +103,8 @@ export default function LoginScreen({ navigation }) {
         placeholder="Enter email"
         autoCapitalize="none"
         value={email}
-        onChangeText={(t) => setEmail(t.toLowerCase())}
+        onChangeText={validateEmail}
+        error={emailError}
       />
 
       <AuthInput
@@ -91,7 +112,8 @@ export default function LoginScreen({ navigation }) {
         placeholder="Enter password"
         secureTextEntry
         value={password}
-        onChangeText={setPassword}
+        onChangeText={validatePassword}
+        error={passwordError}
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -112,6 +134,8 @@ export default function LoginScreen({ navigation }) {
     </AuthLayout>
   );
 }
+
+// ================= STYLES =================
 
 const styles = StyleSheet.create({
   title: {
