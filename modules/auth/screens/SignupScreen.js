@@ -1,8 +1,18 @@
 import React, { useState } from "react";
-import { Text, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 
 import { registerUser } from "../services/authService";
-import { API_BASE_URL } from "../../global/services/env";
+import { Colors } from "../../global/theme/colors";
+
+// ✅ Custom components
+import AuthLayout from "../components/AuthLayout";
+import AuthInput from "../components/AuthInput";
 
 export default function SignupScreen({ navigation }) {
   const [fullName, setFullName] = useState("");
@@ -13,19 +23,17 @@ export default function SignupScreen({ navigation }) {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  // ✅ ADDED
   const [apiError, setApiError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // ================= VALIDATIONS =================
 
   const validateFullName = (text) => {
     const filtered = text.replace(/[^A-Za-z ]/g, "");
     setFullName(filtered);
 
-    const nameRegex = /^[A-Za-z ]+$/;
-
-    if (text.length < 3) {
+    if (filtered.length < 3) {
       setFullNameError("Full name must be at least 3 characters");
-    } else if (!nameRegex.test(text)) {
-      setFullNameError("Only alphabets and spaces allowed");
     } else {
       setFullNameError("");
     }
@@ -41,7 +49,9 @@ export default function SignupScreen({ navigation }) {
 
   const validatePassword = (text) => {
     setPassword(text);
-    setPasswordError(text.length >= 6 ? "" : "Minimum 6 characters required");
+    setPasswordError(
+      text.length >= 6 ? "" : "Minimum 6 characters required"
+    );
   };
 
   const isFormValid =
@@ -53,10 +63,12 @@ export default function SignupScreen({ navigation }) {
     !passwordError &&
     !loading;
 
+  // ================= SIGNUP =================
+
   const handleSignup = async () => {
     try {
       setLoading(true);
-      setBackendError("");
+      setApiError("");
 
       await registerUser(
         fullName.trim(),
@@ -68,10 +80,9 @@ export default function SignupScreen({ navigation }) {
     } catch (err) {
       console.log("Signup failed:", err.response?.data);
 
-      // ✅ ADDED (ONLY LOGIC CHANGE)
       if (
-        err.response?.data?.message === "Email already registered" ||
-        err.response?.status === 409
+        err.response?.status === 409 ||
+        err.response?.data?.message === "Email already registered"
       ) {
         setApiError("Email already registered");
       } else {
@@ -80,8 +91,12 @@ export default function SignupScreen({ navigation }) {
           err.response?.data?.message || "Signup failed. Please try again."
         );
       }
+    } finally {
+      setLoading(false);
     }
   };
+
+  // ================= UI =================
 
   return (
     <AuthLayout>
@@ -113,20 +128,21 @@ export default function SignupScreen({ navigation }) {
         onChangeText={validatePassword}
         error={passwordError}
       />
-      {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
 
-      {/* ✅ ADDED — Email already registered */}
       {apiError ? <Text style={styles.error}>{apiError}</Text> : null}
 
-      {/* Signup Button */}
       <TouchableOpacity
         style={[
           styles.button,
-          { backgroundColor: isFormValid ? "#007bff" : "#999" },
+          { backgroundColor: isFormValid ? Colors.primary : "#999" },
         ]}
         disabled={!isFormValid}
         onPress={handleSignup}
-      />
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Creating account..." : "Sign Up"}
+        </Text>
+      </TouchableOpacity>
 
       <Text
         style={styles.link}
@@ -137,6 +153,8 @@ export default function SignupScreen({ navigation }) {
     </AuthLayout>
   );
 }
+
+// ================= STYLES =================
 
 const styles = StyleSheet.create({
   title: {
@@ -157,11 +175,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
   },
+  button: {
+    padding: 16,
+    borderRadius: 14,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   link: {
     marginTop: 22,
     textAlign: "center",
     color: Colors.primary,
     fontWeight: "600",
   },
-
 });
