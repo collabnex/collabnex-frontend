@@ -1,16 +1,10 @@
 import React, { useState } from "react";
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { Text, StyleSheet } from "react-native";
+
 import { registerUser } from "../services/authService";
 import { API_BASE_URL } from "../../global/services/env";
 
-const SignupScreen = ({ navigation }) => {
+export default function SignupScreen({ navigation }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,40 +16,32 @@ const SignupScreen = ({ navigation }) => {
   // ✅ ADDED
   const [apiError, setApiError] = useState("");
 
-  // ⛔ Full Name Validation — Only Alphabets Allowed
   const validateFullName = (text) => {
     const filtered = text.replace(/[^A-Za-z ]/g, "");
     setFullName(filtered);
 
     const nameRegex = /^[A-Za-z ]+$/;
 
-    if (filtered.length < 3) {
+    if (text.length < 3) {
       setFullNameError("Full name must be at least 3 characters");
-    } else if (!nameRegex.test(filtered)) {
-      setFullNameError("Only alphabets and spaces are allowed");
+    } else if (!nameRegex.test(text)) {
+      setFullNameError("Only alphabets and spaces allowed");
     } else {
       setFullNameError("");
     }
   };
 
-  // Email validation
   const validateEmail = (text) => {
     const lower = text.toLowerCase();
     setEmail(lower);
 
     const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-
-    if (!emailRegex.test(lower)) {
-      setEmailError("Invalid email format");
-    } else {
-      setEmailError("");
-    }
+    setEmailError(emailRegex.test(lower) ? "" : "Invalid email format");
   };
 
-  // Password validation
   const validatePassword = (text) => {
     setPassword(text);
-    setPasswordError(text.length >= 6 ? "" : "Password must be 6+ characters");
+    setPasswordError(text.length >= 6 ? "" : "Minimum 6 characters required");
   };
 
   const isFormValid =
@@ -64,25 +50,21 @@ const SignupScreen = ({ navigation }) => {
     password &&
     !fullNameError &&
     !emailError &&
-    !passwordError;
+    !passwordError &&
+    !loading;
 
   const handleSignup = async () => {
-    if (!isFormValid) {
-      Alert.alert(
-        "Error",
-        "Please fill all fields correctly before submitting."
-      );
-      return;
-    }
-
     try {
-      const res = await registerUser(
+      setLoading(true);
+      setBackendError("");
+
+      await registerUser(
         fullName.trim(),
         email.trim(),
         password.trim()
       );
-      Alert.alert("Success", "Account created successfully!");
-      navigation.navigate("Login");
+
+      navigation.replace("Login");
     } catch (err) {
       console.log("Signup failed:", err.response?.data);
 
@@ -102,37 +84,34 @@ const SignupScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <AuthLayout>
       <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Join CollabNEX today</Text>
 
-      {/* Full Name */}
-      <Text style={styles.label}>Full Name</Text>
-      <TextInput
-        style={styles.input}
+      <AuthInput
+        label="Full Name"
+        placeholder="Enter full name"
         value={fullName}
         onChangeText={validateFullName}
-        placeholder="Enter full name"
+        error={fullNameError}
       />
-      {fullNameError ? <Text style={styles.error}>{fullNameError}</Text> : null}
 
-      {/* Email */}
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
+      <AuthInput
+        label="Email"
+        placeholder="Enter email"
+        autoCapitalize="none"
         value={email}
         onChangeText={validateEmail}
-        placeholder="Enter email"
+        error={emailError}
       />
-      {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
 
-      {/* Password */}
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
+      <AuthInput
+        label="Password"
+        placeholder="Create password"
+        secureTextEntry
         value={password}
         onChangeText={validatePassword}
-        placeholder="Enter password"
-        secureTextEntry
+        error={passwordError}
       />
       {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
 
@@ -147,51 +126,42 @@ const SignupScreen = ({ navigation }) => {
         ]}
         disabled={!isFormValid}
         onPress={handleSignup}
-      >
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
+      />
 
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
-      </TouchableOpacity>
-    </View>
+      <Text
+        style={styles.link}
+        onPress={() => navigation.replace("Login")}
+      >
+        Already have an account? Log in
+      </Text>
+    </AuthLayout>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20 },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "700",
-    marginBottom: 25,
+    color: Colors.textPrimary,
     textAlign: "center",
   },
-  label: { fontWeight: "600", marginBottom: 5 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
+  subtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 24,
+    marginTop: 6,
   },
   error: {
-    color: "red",
-    fontSize: 13,
-    marginBottom: 10,
-    marginTop: -8,
-  },
-  button: {
-    padding: 15,
-    borderRadius: 8,
+    color: Colors.error,
+    textAlign: "center",
     marginTop: 10,
   },
-  buttonText: { color: "#fff", textAlign: "center", fontWeight: "600" },
   link: {
-    color: "#000",
+    marginTop: 22,
     textAlign: "center",
-    marginTop: 15,
-    textDecorationLine: "underline",
+    color: Colors.primary,
+    fontWeight: "600",
   },
-});
 
-export default SignupScreen;
+});
