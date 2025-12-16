@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,27 +9,18 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import RNPickerSelect from "react-native-picker-select";
 import { API_BASE_URL } from "../../global/services/env";
 
-
-
-// Country → State Sample Data
-const countryList = [
-  { label: "India", value: "India" },
-  { label: "USA", value: "USA" },
-];
-
-const stateList = {
-  India: [
-    { label: "Maharashtra", value: "Maharashtra" },
-    { label: "Kerala", value: "Kerala" },
-    { label: "Karnataka", value: "Karnataka" },
-  ],
-  USA: [
-    { label: "California", value: "California" },
-    { label: "Texas", value: "Texas" },
-  ],
+/* 🎨 CollabNEX Theme */
+const Colors = {
+  primary: "#592FE4",
+  secondary: "#8F7BFF",
+  background: "#F8F7FF",
+  white: "#FFFFFF",
+  textPrimary: "#1E1E2E",
+  textSecondary: "#6B6B80",
+  border: "#E5E4F0",
+  error: "#E53935",
 };
 
 export default function BuyNow({ route, navigation }) {
@@ -45,85 +36,55 @@ export default function BuyNow({ route, navigation }) {
     city: "",
     state: "",
     country: "India",
-    currency: "INR",
     quantity: "",
   });
 
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  /* -------------------------------
+     INPUT CHANGE (SANITIZED)
+  -------------------------------- */
+  const update = (key, value) => {
+    let v = value;
 
-  const handleChange = (key, value) => {
-    let updatedValue = value;
+    if (key === "phoneNumber") v = value.replace(/[^0-9]/g, "").slice(0, 10);
+    if (key === "pincode") v = value.replace(/[^0-9]/g, "").slice(0, 6);
+    if (key === "quantity") v = value.replace(/[^0-9]/g, "");
 
-    if (key === "phoneNumber") updatedValue = value.replace(/[^0-9]/g, "").slice(0, 10);
-    if (key === "pincode") updatedValue = value.replace(/[^0-9]/g, "").slice(0, 6);
-    if (key === "quantity") updatedValue = value.replace(/[^0-9]/g, "");
-
-    if (key === "country") {
-      setForm({ ...form, country: updatedValue, state: "" });
-      return;
-    }
-
-    setForm({ ...form, [key]: updatedValue });
-    validateField(key, updatedValue);
+    setForm((p) => ({ ...p, [key]: v }));
   };
 
-  const validateField = (key, value) => {
-    let error = "";
+  /* -------------------------------
+     VALIDATION (SILENT)
+  -------------------------------- */
+  const isValid = useMemo(() => {
+    if (!form.fullName.trim()) return false;
+    if (form.phoneNumber.length !== 10) return false;
+    if (!form.addressLine1.trim()) return false;
+    if (form.pincode.length !== 6) return false;
+    if (!form.city.trim()) return false;
+    if (!form.state.trim()) return false;
+    if (!form.country.trim()) return false;
+    if (!form.quantity || parseInt(form.quantity) < 1) return false;
+    return true;
+  }, [form]);
 
-    if (!value.trim() && key !== "addressLine2" && key !== "landmark") {
-      error = "This field is required";
-    }
-
-    if (key === "phoneNumber" && value.length !== 10) error = "Phone number must be 10 digits";
-    if (key === "pincode" && value.length !== 6) error = "Pincode must be 6 digits";
-
-    if (key === "quantity") {
-      if (!value.trim()) error = "Quantity is required";
-      else if (parseInt(value) < 1) error = "Quantity must be at least 1";
-    }
-
-    setErrors((prev) => ({ ...prev, [key]: error }));
-  };
-
-  const validateFormBeforeSubmit = () => {
-    let newErrors = {};
-    Object.keys(form).forEach((key) => {
-      const value = form[key];
-      let error = "";
-
-      if (!value.trim() && key !== "addressLine2" && key !== "landmark") {
-        error = "This field is required";
-      }
-
-      if (key === "phoneNumber" && value.length !== 10) error = "Phone number must be 10 digits";
-      if (key === "pincode" && value.length !== 6) error = "Pincode must be 6 digits";
-
-      if (key === "quantity") {
-        if (!value.trim()) error = "Quantity is required";
-        else if (parseInt(value) < 1) error = "Quantity must be at least 1";
-      }
-
-      if (error) newErrors[key] = error;
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateFormBeforeSubmit()) {
-      alert("Please fix errors before submitting.");
-      return;
-    }
-
-    setLoading(true);
-
+  /* -------------------------------
+     SUBMIT
+  -------------------------------- */
+  const submitOrder = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
-      const orderData = {
-        ...form,
-        quantity: undefined,
+
+      const payload = {
+        fullName: form.fullName.trim(),
+        phoneNumber: form.phoneNumber,
+        addressLine1: form.addressLine1.trim(),
+        addressLine2: form.addressLine2.trim(),
+        landmark: form.landmark.trim(),
+        pincode: form.pincode,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        country: form.country.trim(),
+        currency: "INR",
         items: [
           {
             productId: product.id,
@@ -132,135 +93,186 @@ export default function BuyNow({ route, navigation }) {
         ],
       };
 
-      await axios.post(`${API_BASE_URL}/api/orders`, orderData, {
+      await axios.post(`${API_BASE_URL}/orders`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setLoading(false);
-      alert("Order placed successfully!");
+      alert("✅ Order placed successfully");
       navigation.goBack();
-    } catch (error) {
-      setLoading(false);
-      console.log("Order Submit Error:", error);
-      alert("Error placing order");
+    } catch (e) {
+      console.log(e);
+      alert("❌ Failed to place order");
     }
   };
 
+  /* -------------------------------
+     UI
+  -------------------------------- */
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.heading}>Enter Delivery Details</Text>
+    <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>Delivery Details</Text>
+      <Text style={styles.subtitle}>Complete your order securely</Text>
 
-      {/* Auto-generated Text Inputs */}
-      {Object.keys(form).map((key) =>
-        key !== "currency" &&
-        key !== "quantity" &&
-        key !== "city" &&
-        key !== "state" &&
-        key !== "country" ? (
-          <View key={key}>
-            <TextInput
-              placeholder={key}
-              style={[styles.input, errors[key] ? styles.errorInput : null]}
-              value={form[key]}
-              onChangeText={(value) => handleChange(key, value)}
-            />
-            {errors[key] && <Text style={styles.errorText}>{errors[key]}</Text>}
-          </View>
-        ) : null
-      )}
+      <View style={styles.card}>
+        <Field label="Full Name" required>
+          <Input value={form.fullName} onChange={(v) => update("fullName", v)} />
+        </Field>
 
-      {/* Quantity */}
-      <View>
-        <TextInput
-          placeholder="Quantity"
-          keyboardType="numeric"
-          style={[styles.input, errors.quantity ? styles.errorInput : null]}
-          value={form.quantity}
-          onChangeText={(value) => handleChange("quantity", value)}
-        />
-        {errors.quantity && <Text style={styles.errorText}>{errors.quantity}</Text>}
+        <Field label="Phone Number" required>
+          <Input
+            keyboardType="numeric"
+            value={form.phoneNumber}
+            onChange={(v) => update("phoneNumber", v)}
+          />
+        </Field>
+
+        <Field label="Address Line 1" required>
+          <Input
+            value={form.addressLine1}
+            onChange={(v) => update("addressLine1", v)}
+          />
+        </Field>
+
+        <Field label="Address Line 2">
+          <Input
+            value={form.addressLine2}
+            onChange={(v) => update("addressLine2", v)}
+          />
+        </Field>
+
+        <Field label="Landmark">
+          <Input
+            value={form.landmark}
+            onChange={(v) => update("landmark", v)}
+          />
+        </Field>
+
+        <Field label="Pincode" required>
+          <Input
+            keyboardType="numeric"
+            value={form.pincode}
+            onChange={(v) => update("pincode", v)}
+          />
+        </Field>
+
+        <Field label="City" required>
+          <Input value={form.city} onChange={(v) => update("city", v)} />
+        </Field>
+
+        <Field label="State" required>
+          <Input value={form.state} onChange={(v) => update("state", v)} />
+        </Field>
+
+        <Field label="Country" required>
+          <Input value={form.country} onChange={(v) => update("country", v)} />
+        </Field>
+
+        <Field label="Quantity" required>
+          <Input
+            keyboardType="numeric"
+            value={form.quantity}
+            onChange={(v) => update("quantity", v)}
+          />
+        </Field>
+
+        <TouchableOpacity
+          disabled={!isValid}
+          style={[
+            styles.button,
+            !isValid && { opacity: 0.5 },
+          ]}
+          onPress={submitOrder}
+        >
+          <Text style={styles.buttonText}>Place Order</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* City (TextInput instead of dropdown) */}
-      <TextInput
-        placeholder="City"
-        style={[styles.input, errors.city ? styles.errorInput : null]}
-        value={form.city}
-        onChangeText={(value) => handleChange("city", value)}
-      />
-      {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-
-      {/* State Dropdown */}
-      <Text style={styles.label}>State</Text>
-      <RNPickerSelect
-        onValueChange={(value) => handleChange("state", value)}
-        items={stateList[form.country] || []}
-        value={form.state}
-        style={pickerStyles}
-      />
-
-      {/* Country Dropdown */}
-      <Text style={styles.label}>Country</Text>
-      <RNPickerSelect
-        onValueChange={(value) => handleChange("country", value)}
-        items={countryList}
-        value={form.country}
-        style={pickerStyles}
-      />
-
-      {/* Submit Button */}
-      <TouchableOpacity
-        style={[styles.button, loading ? { opacity: 0.6 } : null]}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>{loading ? "Submitting..." : "Submit Order"}</Text>
-      </TouchableOpacity>
-
-      {/* Back Button */}
-      <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => navigation.goBack()}>
-        <Text style={styles.buttonText}>Back</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#fff" },
-  heading: {
-    fontSize: 22,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 15,
-  },
-  label: { fontSize: 16, fontWeight: "500", marginBottom: 5, marginTop: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  errorInput: { borderColor: "red" },
-  errorText: { color: "red", marginBottom: 10 },
-  button: {
-    backgroundColor: "#007bff",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  backButton: { backgroundColor: "#6c757d" },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-});
+/* -------------------------------
+   REUSABLE COMPONENTS
+-------------------------------- */
+const Field = ({ label, required, children }) => (
+  <View style={{ marginBottom: 14 }}>
+    <Text style={styles.label}>
+      {label} {required && <Text style={{ color: Colors.error }}>*</Text>}
+    </Text>
+    {children}
+  </View>
+);
 
-const pickerStyles = {
-  inputAndroid: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    color: "#000",
-    marginBottom: 10,
+const Input = ({ value, onChange, keyboardType }) => (
+  <TextInput
+    value={value}
+    onChangeText={onChange}
+    keyboardType={keyboardType}
+    style={styles.input}
+    placeholderTextColor={Colors.textSecondary}
+  />
+);
+
+/* -------------------------------
+   STYLES
+-------------------------------- */
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    padding: 16,
   },
-};
+
+  title: {
+    fontSize: 26,
+    fontWeight: "700",
+    textAlign: "center",
+    color: Colors.textPrimary,
+  },
+
+  subtitle: {
+    textAlign: "center",
+    color: Colors.textSecondary,
+    marginBottom: 20,
+  },
+
+  card: {
+    backgroundColor: Colors.white,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
+
+  input: {
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 14,
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+
+  button: {
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 24,
+  },
+
+  buttonText: {
+    color: Colors.white,
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
