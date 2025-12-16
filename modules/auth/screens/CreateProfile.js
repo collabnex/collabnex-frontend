@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { API_BASE_URL } from "../../global/services/env";
 
 import DropDownPicker from "react-native-dropdown-picker";
 import axios from "axios";
@@ -149,12 +150,19 @@ export default function CreateProfile() {
   try {
     const token = await AsyncStorage.getItem("token");
 
-    await axios.put("http://localhost:8080/api/profile/me", payload, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    await axios.put(
+  `${API_BASE_URL}/profile/me`,
+  payload,
+  {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+
+
 
     Alert.alert("Success", "Profile updated successfully!");
     navigation.replace("Home");
@@ -244,6 +252,7 @@ export default function CreateProfile() {
         <Text style={styles.label}>Skills</Text>
 
         <DropDownPicker
+          listMode="SCROLLVIEW"
           open={openSkills}
           value={skills}
           items={skillsList}
@@ -281,6 +290,7 @@ export default function CreateProfile() {
         <Text style={styles.label}>Tags</Text>
 
         <DropDownPicker
+          listMode="SCROLLVIEW"
           open={openTags}
           value={tags}
           items={tagsList}

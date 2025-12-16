@@ -12,6 +12,7 @@ import { loginUser } from "../services/authService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import CreateProfile from "./CreateProfile";
+import { API_BASE_URL } from "../../global/services/env";
 
 
 
@@ -44,11 +45,11 @@ export default function LoginScreen({ navigation }) {
   };
 
   const isButtonDisabled =
-    !email ||
-    !password ||
-    emailError ||
-    passwordError ||
-    loading;
+  !email ||
+  !password ||
+  !!emailError ||
+  !!passwordError ||
+  loading;
 
   const handleLogin = async () => {
     setBackendError("");
@@ -71,11 +72,13 @@ export default function LoginScreen({ navigation }) {
       Alert.alert("Success", "Login Successfully");
       // navigation.replace("Home");
       try {
-        const profileRes = await axios.get("http://localhost:8080/api/users/me/profile",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const profileRes = await axios.get(
+  `${API_BASE_URL}/users/me/profile`,
+  {
+    headers: { Authorization: `Bearer ${token}` },
+  }
+);
+
         const profile = profileRes.data.data;
 
        //  IF BIO EXISTS → PROFILE ALREADY CREATED

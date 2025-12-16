@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { registerUser } from "../services/authService";
+import { API_BASE_URL } from "../../global/services/env";
 
 const SignupScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState("");
@@ -18,11 +19,12 @@ const SignupScreen = ({ navigation }) => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
+  // ✅ ADDED
+  const [apiError, setApiError] = useState("");
+
   // ⛔ Full Name Validation — Only Alphabets Allowed
   const validateFullName = (text) => {
-    // Remove all characters except alphabets & spaces
     const filtered = text.replace(/[^A-Za-z ]/g, "");
-
     setFullName(filtered);
 
     const nameRegex = /^[A-Za-z ]+$/;
@@ -83,9 +85,19 @@ const SignupScreen = ({ navigation }) => {
       navigation.navigate("Login");
     } catch (err) {
       console.log("Signup failed:", err.response?.data);
-      let message =
-        err.response?.data?.message || "Signup failed. Please try again.";
-      Alert.alert("Signup Failed", message);
+
+      // ✅ ADDED (ONLY LOGIC CHANGE)
+      if (
+        err.response?.data?.message === "Email already registered" ||
+        err.response?.status === 409
+      ) {
+        setApiError("Email already registered");
+      } else {
+        Alert.alert(
+          "Signup Failed",
+          err.response?.data?.message || "Signup failed. Please try again."
+        );
+      }
     }
   };
 
@@ -123,6 +135,9 @@ const SignupScreen = ({ navigation }) => {
         secureTextEntry
       />
       {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
+
+      {/* ✅ ADDED — Email already registered */}
+      {apiError ? <Text style={styles.error}>{apiError}</Text> : null}
 
       {/* Signup Button */}
       <TouchableOpacity

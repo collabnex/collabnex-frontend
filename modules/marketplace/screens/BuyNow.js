@@ -10,8 +10,9 @@ import {
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RNPickerSelect from "react-native-picker-select";
+import { API_BASE_URL } from "../../global/services/env";
 
-const baseURL = "http://localhost:8080";
+
 
 // Country → State Sample Data
 const countryList = [
@@ -131,7 +132,7 @@ export default function BuyNow({ route, navigation }) {
         ],
       };
 
-      await axios.post(`${baseURL}/api/orders`, orderData, {
+      await axios.post(`${API_BASE_URL}/api/orders`, orderData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

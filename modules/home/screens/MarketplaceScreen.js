@@ -12,12 +12,12 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../../global/services/env";
 
 const MarketplaceScreen = ({ navigation }) => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const BASE_URL = "http://localhost:8080";
 
   // 📐 Responsive Screen Info
   const { width } = useWindowDimensions();
@@ -42,7 +42,7 @@ const MarketplaceScreen = ({ navigation }) => {
         return;
       }
 
-      const res = await axios.get(`${BASE_URL}/api/service-products`, {
+      const res = await axios.get(`${API_BASE_URL}/api/service-products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

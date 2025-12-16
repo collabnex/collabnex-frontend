@@ -12,6 +12,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RNPickerSelect from "react-native-picker-select";
 import * as ImagePicker from "expo-image-picker";
+import { API_BASE_URL } from "../../global/services/env";
 
 export default function SellProductForm() {
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export default function SellProductForm() {
     setForm({ ...form, [key]: value });
   };
 
-  const baseURL = "http://localhost:8080";
+
 
   // ⭐ IMAGE PICKER FUNCTION
   const pickImage = async () => {
@@ -90,7 +91,7 @@ export default function SellProductForm() {
       };
 
       const response = await axios.post(
-        `${baseURL}/api/physical-products`,
+        `${API_BASE_URL}/api/physical-products`,
         payload,
         {
           headers: {
