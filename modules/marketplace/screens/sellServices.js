@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
-  Button,
   Alert,
   StyleSheet,
   ScrollView,
@@ -11,11 +10,15 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
+import RNPickerSelect from "react-native-picker-select";
+
 import { API_BASE_URL } from "../../global/services/env";
+import { Colors } from "../../global/theme/colors";
+
 const categories = [
   "Web Development",
   "Design",
@@ -24,7 +27,7 @@ const categories = [
   "Other",
 ];
 
-const SellServiceScreen = () => {
+export default function SellServiceScreen({ navigation }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -39,63 +42,34 @@ const SellServiceScreen = () => {
   const [isFormValid, setIsFormValid] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // -------------------------------
-  // Form Validation
-  // -------------------------------
+  /* ================= VALIDATION ================= */
   useEffect(() => {
-    const newErrors = {};
+    const e = {};
 
-    // Title
-    if (!form.title.trim()) newErrors.title = "Title is required";
-    else if (form.title.trim().length < 3)
-      newErrors.title = "Title must be at least 3 characters";
-    else if (form.title.trim().length > 50)
-      newErrors.title = "Title cannot exceed 50 characters";
-    else if (!/^[A-Za-z0-9 ,\-]+$/.test(form.title.trim()))
-      newErrors.title = "Invalid characters in title";
+    if (!form.title.trim()) e.title = "Title is required";
+    else if (form.title.length < 3) e.title = "Min 3 characters";
 
-    // Description
-    if (!form.description.trim())
-      newErrors.description = "Description is required";
+    if (!form.description.trim()) e.description = "Description required";
 
-    // Price
+    if (!form.price.trim()) e.price = "Price required";
+    else if (!/^\d+(\.\d{1,2})?$/.test(form.price))
+      e.price = "Invalid price";
+    else if (+form.price <= 0) e.price = "Must be greater than 0";
 
-    if (!form.price.trim()) {
-      newErrors.price = "Price is required";
-    } else if (!/^\d+(\.\d{1,2})?$/.test(form.price.trim())) {
-      newErrors.price = "Price must be a valid number (up to 2 decimals)";
-    } else if (parseFloat(form.price) <= 0) {
-      newErrors.price = "Price must be greater than 0";
-    }
-    // Delivery Time
-    if (!form.deliveryTime.trim())
-      newErrors.deliveryTime = "Delivery time is required";
-    else if (parseInt(form.deliveryTime) > 30)
-      newErrors.deliveryTime = "Delivery time cannot exceed 30 days";
+    if (!form.deliveryTime.trim()) e.deliveryTime = "Required";
+    else if (+form.deliveryTime > 30) e.deliveryTime = "Max 30 days";
 
-    // Category
-    if (!form.category.trim()) newErrors.category = "Category is required";
+    if (!form.category) e.category = "Category required";
     if (form.category === "Other" && !form.customCategory.trim())
-      newErrors.customCategory = "Custom category is required";
+      e.customCategory = "Required";
 
-    setErrors(newErrors);
-    setIsFormValid(Object.keys(newErrors).length === 0);
+    setErrors(e);
+    setIsFormValid(Object.keys(e).length === 0);
   }, [form]);
 
-  // -------------------------------
-  // Image Picker
-  // -------------------------------
+  /* ================= IMAGE PICKER ================= */
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(
-        "Permission Denied",
-        "Permission to access gallery is required!"
-      );
-      return;
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
@@ -110,30 +84,13 @@ const SellServiceScreen = () => {
     setForm({ ...form, imagePath: "" });
   };
 
-  // -------------------------------
-  // Submit Form
-  // -------------------------------
+  /* ================= SUBMIT ================= */
   const handleSubmit = async () => {
-    if (!isFormValid) {
-      Alert.alert(
-        "Validation Error",
-        "Please fix the errors before submitting."
-      );
-      return;
-    }
+    if (!isFormValid) return;
 
     setLoading(true);
-
     try {
       const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        Alert.alert(
-          "Authentication Error",
-          "User token not found. Please login."
-        );
-        setLoading(false);
-        return;
-      }
 
       const payload = {
         title: form.title.trim(),
@@ -143,250 +100,243 @@ const SellServiceScreen = () => {
         category:
           form.category === "Other"
             ? form.customCategory.trim()
-            : form.category.trim(),
-        imagePath: form.imagePath, // use URI like SellProduct.js
+            : form.category,
+        imagePath: form.imagePath,
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/service-products`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      Alert.alert("Success", "Service listed successfully!");
-      console.log("Response:", response.data);
-
-      // Reset form
-      setForm({
-        title: "",
-        description: "",
-        price: "",
-        deliveryTime: "",
-        category: "",
-        customCategory: "",
-        imagePath: "",
+      await axios.post(`${API_BASE_URL}/service-products`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-    } catch (error) {
-      console.log("Sell Service Error:", error.response || error.message);
-      const message = error.response?.data?.message || "Something went wrong";
-      Alert.alert("Error", message);
+
+      Alert.alert("Success", "Service listed successfully");
+      navigation.replace("Marketplace");
+    } catch (err) {
+      Alert.alert("Error", "Failed to submit service");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= UI ================= */
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Sell Your Service</Text>
+    <ScrollView style={styles.screen} keyboardShouldPersistTaps="handled">
+      <Text style={styles.title}>Sell a Service</Text>
+      <Text style={styles.subtitle}>
+        Showcase your skills & start earning
+      </Text>
 
-      {/* Title */}
-      <Text style={styles.label}>Title</Text>
-      <TextInput
-        style={[styles.input, errors.title && styles.errorInput]}
-        placeholder="Enter service title"
-        value={form.title}
-        onChangeText={(value) => setForm({ ...form, title: value })}
-      />
-      {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+      {/* IMAGE */}
+      <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
+        {form.imagePath ? (
+          <Image source={{ uri: form.imagePath }} style={styles.image} />
+        ) : (
+          <Text style={styles.imageText}>Tap to upload image</Text>
+        )}
+      </TouchableOpacity>
 
-      {/* Description */}
-      <Text style={styles.label}>Description</Text>
-      <TextInput
-        style={[
-          styles.input,
-          styles.textArea,
-          errors.description && styles.errorInput,
-        ]}
-        placeholder="Enter service description"
-        value={form.description}
-        onChangeText={(value) => setForm({ ...form, description: value })}
-        multiline
-      />
-      {errors.description && (
-        <Text style={styles.errorText}>{errors.description}</Text>
+      {form.imagePath && (
+        <TouchableOpacity onPress={removeImage}>
+          <Text style={styles.removeText}>Remove image</Text>
+        </TouchableOpacity>
       )}
 
-      {/* Price */}
-      <Text style={styles.label}>Price ($)</Text>
-      <TextInput
-        style={[styles.input, errors.price && styles.errorInput]}
-        placeholder="Enter price"
-        value={form.price}
-        keyboardType="decimal-pad"
-        onChangeText={(value) => {
-          // Remove invalid characters
-          let formattedValue = value.replace(/[^0-9.]/g, "");
+      <View style={styles.card}>
+        <TextInput
+          style={[styles.input, errors.title && styles.error]}
+          placeholder="Service title"
+          value={form.title}
+          onChangeText={(v) => setForm({ ...form, title: v })}
+        />
 
-          // Prevent multiple dots
-          const parts = formattedValue.split(".");
-          if (parts.length > 2) {
-            formattedValue = parts[0] + "." + parts[1];
-          }
+        <TextInput
+          style={[
+            styles.input,
+            styles.textArea,
+            errors.description && styles.error,
+          ]}
+          placeholder="Service description"
+          multiline
+          value={form.description}
+          onChangeText={(v) => setForm({ ...form, description: v })}
+        />
 
-          // Limit to 2 decimal places
-          if (parts[1] && parts[1].length > 2) {
-            formattedValue = parts[0] + "." + parts[1].slice(0, 2);
-          }
+        {/* CATEGORY */}
+        <Text style={styles.label}>Category</Text>
+        <RNPickerSelect
+          placeholder={{ label: "Select category", value: null }}
+          value={form.category}
+          onValueChange={(v) => setForm({ ...form, category: v })}
+          items={categories.map((c) => ({ label: c, value: c }))}
+          useNativeAndroidPickerStyle={false}
+          style={pickerStyles(errors.category)}
+          Icon={() => <Text style={styles.arrow}>⌄</Text>}
+        />
 
-          // Fix leading dot like ".5" -> "0.5"
-          if (formattedValue.startsWith(".")) {
-            formattedValue = "0" + formattedValue;
-          }
-
-          // Remove unnecessary leading zeros
-          formattedValue = formattedValue.replace(/^0+(\d)/, "$1");
-
-          setForm({ ...form, price: formattedValue });
-        }}
-      />
-
-      {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
-
-      {/* Delivery Time */}
-      <Text style={styles.label}>Delivery Time (Days)</Text>
-      <TextInput
-        style={[styles.input, errors.deliveryTime && styles.errorInput]}
-        placeholder="Enter delivery time"
-        value={form.deliveryTime}
-        keyboardType="numeric"
-        onChangeText={(value) =>
-          setForm({ ...form, deliveryTime: value.replace(/[^0-9]/g, "") })
-        }
-      />
-      {errors.deliveryTime && (
-        <Text style={styles.errorText}>{errors.deliveryTime}</Text>
-      )}
-
-      {/* Category */}
-      <Text style={styles.label}>Category</Text>
-      <View
-        style={[styles.pickerContainer, errors.category && styles.errorInput]}
-      >
-        <Picker
-          selectedValue={form.category}
-          onValueChange={(value) => setForm({ ...form, category: value })}
-        >
-          <Picker.Item label="Select Category" value="" />
-          {categories.map((cat) => (
-            <Picker.Item label={cat} value={cat} key={cat} />
-          ))}
-        </Picker>
-      </View>
-      {errors.category && (
-        <Text style={styles.errorText}>{errors.category}</Text>
-      )}
-
-      {/* Custom Category */}
-      {form.category === "Other" && (
-        <>
+        {form.category === "Other" && (
           <TextInput
-            style={[styles.input, errors.customCategory && styles.errorInput]}
-            placeholder="Enter custom category"
+            style={[styles.input, errors.customCategory && styles.error]}
+            placeholder="Custom category"
             value={form.customCategory}
-            onChangeText={(value) =>
-              setForm({ ...form, customCategory: value })
+            onChangeText={(v) =>
+              setForm({ ...form, customCategory: v })
             }
           />
-          {errors.customCategory && (
-            <Text style={styles.errorText}>{errors.customCategory}</Text>
-          )}
-        </>
-      )}
+        )}
 
-      {/* Image Picker */}
-      <Text style={styles.label}>Image (optional)</Text>
-      <View style={styles.imagePickerContainer}>
-        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-          <Text style={styles.imagePickerText}>
-            {form.imagePath ? "Change Image" : "Pick Image"}
+        {/* PRICE + DELIVERY */}
+        <View style={styles.row}>
+          <TextInput
+            style={[styles.input, styles.half, errors.price && styles.error]}
+            placeholder="Price"
+            keyboardType="numeric"
+            value={form.price}
+            onChangeText={(v) =>
+              setForm({
+                ...form,
+                price: v.replace(/[^0-9.]/g, ""),
+              })
+            }
+          />
+
+          <TextInput
+            style={[
+              styles.input,
+              styles.half,
+              errors.deliveryTime && styles.error,
+            ]}
+            placeholder="Delivery (days)"
+            keyboardType="numeric"
+            value={form.deliveryTime}
+            onChangeText={(v) =>
+              setForm({
+                ...form,
+                deliveryTime: v.replace(/[^0-9]/g, ""),
+              })
+            }
+          />
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            (!isFormValid || loading) && styles.disabled,
+          ]}
+          disabled={!isFormValid || loading}
+          onPress={handleSubmit}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Submitting..." : "Publish Service"}
           </Text>
         </TouchableOpacity>
-        {form.imagePath ? (
-          <View style={styles.previewContainer}>
-            <Image
-              source={{ uri: form.imagePath }}
-              style={styles.imagePreview}
-            />
-            <TouchableOpacity onPress={removeImage} style={styles.removeButton}>
-              <Text style={styles.removeButtonText}>Remove</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
       </View>
-
-      {/* Submit Button */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Submitting..." : "Submit Service"}
-        </Text>
-      </TouchableOpacity>
     </ScrollView>
   );
-};
+}
+
+/* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#f9f9f9", flexGrow: 1 },
-  heading: {
-    fontSize: 24,
-    fontWeight: "bold",
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    padding: 16,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "700",
+    textAlign: "center",
+    color: Colors.textPrimary,
+  },
+  subtitle: {
+    textAlign: "center",
+    color: Colors.textSecondary,
     marginBottom: 20,
-    color: "#333",
-    alignSelf: "center",
   },
-  label: { fontSize: 16, marginBottom: 5, color: "#555" },
+  imageBox: {
+    height: 160,
+    borderRadius: 18,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  image: { width: "100%", height: "100%", borderRadius: 18 },
+  imageText: { color: Colors.textSecondary, fontWeight: "600" },
+  removeText: {
+    color: Colors.error,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-  },
-  textArea: { height: 100, textAlignVertical: "top" },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-  },
-  errorInput: { borderColor: "red" },
-  errorText: { color: "red", marginBottom: 10 },
-  imagePickerContainer: { marginBottom: 20 },
-  imagePicker: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: Colors.background,
+    borderRadius: 14,
     padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    fontSize: 15,
   },
-  imagePickerText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  previewContainer: { marginTop: 10, alignItems: "center" },
-  imagePreview: { width: 200, height: 200, borderRadius: 10 },
-  removeButton: {
-    marginTop: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: "red",
-    borderRadius: 5,
+  textArea: {
+    height: 90,
+    textAlignVertical: "top",
   },
-  removeButtonText: { color: "#fff", fontWeight: "bold" },
+  error: { borderColor: Colors.error },
+  row: { flexDirection: "row", gap: 12 },
+  half: { flex: 1 },
   button: {
-    backgroundColor: "blue",
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 30,
+    marginTop: 10,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  disabled: {
+    backgroundColor: Colors.secondary,
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  arrow: {
+    fontSize: 18,
+    color: Colors.textSecondary,
+    paddingRight: 12,
+  },
 });
 
-export default SellServiceScreen;
+const pickerStyles = (hasError) => ({
+  inputIOS: {
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: hasError ? Colors.error : Colors.border,
+    marginBottom: 14,
+  },
+  inputAndroid: {
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: hasError ? Colors.error : Colors.border,
+    marginBottom: 14,
+  },
+});

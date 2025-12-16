@@ -21,7 +21,7 @@ export default function MyOrdersScreen() {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/api/orders/all`, {
+      const response = await axios.get(`${API_BASE_URL}/orders/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
