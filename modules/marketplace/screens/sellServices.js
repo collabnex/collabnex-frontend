@@ -15,8 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
-
-const BASE_URL = "http://localhost:8080/api";
+import { API_BASE_URL } from "../../global/services/env";
 const categories = [
   "Web Development",
   "Design",
@@ -149,7 +148,7 @@ const SellServiceScreen = () => {
       };
 
       const response = await axios.post(
-        `${BASE_URL}/service-products`,
+        `${API_BASE_URL}/service-products`,
         payload,
         {
           headers: {

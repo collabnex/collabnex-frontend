@@ -17,6 +17,7 @@ import CollaborationScreen from "./screens/CollaborationScreen";
 import EventsScreen from "./screens/EventsScreen";
 import DashboardScreen from "./screens/dashboard";
 import MarketNavigator from "../marketplace/MarketNavigator";
+import { API_BASE_URL } from "../global/services/env";
 
 const Tab = createBottomTabNavigator();
 
