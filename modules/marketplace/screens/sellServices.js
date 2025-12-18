@@ -15,6 +15,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
+import { uploadImageToS3 } from "../services/imageUploadService";
+
 
 const BASE_URL = "http://localhost:8080/api";
 const categories = [
@@ -115,71 +117,79 @@ const SellServiceScreen = () => {
   // Submit Form
   // -------------------------------
   const handleSubmit = async () => {
-    if (!isFormValid) {
+  if (!isFormValid) {
+    Alert.alert(
+      "Validation Error",
+      "Please fix the errors before submitting."
+    );
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
       Alert.alert(
-        "Validation Error",
-        "Please fix the errors before submitting."
+        "Authentication Error",
+        "User token not found. Please login."
       );
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        Alert.alert(
-          "Authentication Error",
-          "User token not found. Please login."
-        );
-        setLoading(false);
-        return;
-      }
-
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        price: parseFloat(form.price),
-        deliveryTimeDays: parseInt(form.deliveryTime),
-        category:
-          form.category === "Other"
-            ? form.customCategory.trim()
-            : form.category.trim(),
-        imagePath: form.imagePath, // use URI like SellProduct.js
-      };
-
-      const response = await axios.post(
-        `${BASE_URL}/service-products`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      Alert.alert("Success", "Service listed successfully!");
-      console.log("Response:", response.data);
-
-      // Reset form
-      setForm({
-        title: "",
-        description: "",
-        price: "",
-        deliveryTime: "",
-        category: "",
-        customCategory: "",
-        imagePath: "",
-      });
-    } catch (error) {
-      console.log("Sell Service Error:", error.response || error.message);
-      const message = error.response?.data?.message || "Something went wrong";
-      Alert.alert("Error", message);
-    } finally {
-      setLoading(false);
+    // 🔥 STEP 1: Upload image to S3 (ONLY if image exists)
+    let uploadedImageUrl = "";
+    if (form.imagePath) {
+      uploadedImageUrl = await uploadImageToS3(form.imagePath);
     }
-  };
+
+    // 🔥 STEP 2: Send S3 URL to backend
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      price: parseFloat(form.price),
+      deliveryTimeDays: parseInt(form.deliveryTime),
+      category:
+        form.category === "Other"
+          ? form.customCategory.trim()
+          : form.category.trim(),
+      imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
+    };
+
+    const response = await axios.post(
+      `${BASE_URL}/service-products`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    Alert.alert("Success", "Service listed successfully!");
+    console.log("Response:", response.data);
+
+    // 🔄 Reset form
+    setForm({
+      title: "",
+      description: "",
+      price: "",
+      deliveryTime: "",
+      category: "",
+      customCategory: "",
+      imagePath: "",
+    });
+  } catch (error) {
+    console.log("Sell Service Error:", error.response || error.message);
+    const message = error.response?.data?.message || "Something went wrong";
+    Alert.alert("Error", message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

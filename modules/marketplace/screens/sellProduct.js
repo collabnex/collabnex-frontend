@@ -12,6 +12,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RNPickerSelect from "react-native-picker-select";
 import * as ImagePicker from "expo-image-picker";
+import { uploadImageToS3 } from "../services/imageUploadService";
 
 export default function SellProductForm() {
   const [loading, setLoading] = useState(false);
@@ -47,7 +48,13 @@ export default function SellProductForm() {
 
   // ⭐ FORM VALIDATION
   const validateForm = () => {
-    if (!form.title || !form.description || !form.price || !form.stock || !form.category) {
+    if (
+      !form.title ||
+      !form.description ||
+      !form.price ||
+      !form.stock ||
+      !form.category
+    ) {
       Alert.alert("Error", "All fields are required.");
       return false;
     }
@@ -80,13 +87,20 @@ export default function SellProductForm() {
         return;
       }
 
+      // 🔥 STEP 1: Upload image to S3 (ONLY if image exists)
+      let uploadedImageUrl = "";
+      if (form.imagePath) {
+        uploadedImageUrl = await uploadImageToS3(form.imagePath);
+      }
+
+      // 🔥 STEP 2: Send S3 URL to backend
       const payload = {
         title: form.title,
         description: form.description,
         price: parseFloat(form.price),
         stock: parseInt(form.stock),
         category: form.category,
-        imagePath: form.imagePath,
+        imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
       };
 
       const response = await axios.post(
