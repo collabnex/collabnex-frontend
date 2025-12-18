@@ -1,112 +1,81 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet } from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
- 
+/* 🎨 CollabNEX Theme */
+const Colors = {
+  primary: "#592FE4",
+  secondary: "#8F7BFF",
+  background: "#F8F7FF",
+  white: "#FFFFFF",
+  textPrimary: "#1E1E2E",
+  textSecondary: "#6B6B80",
+  border: "#E5E4F0",
+};
 
-
-const baseURL = "http://localhost:8080";  // ← replace with your backend IP
-
-export default function ShowcaseScreen({ navigation}) {
-  const [products, setProducts] = useState([]);
-  
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-
-      const res = await axios.get(`${baseURL}/api/physical-products`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setProducts(res.data);
-    } catch (error) {
-      console.log("Fetch Error:", error);
-    }
-  };
-
-  const handleBuyNow = (item) => {
-    // console.log("Buying product:", item.title);
-     navigation.navigate("BuyNow", { product: item });
-  };
-
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      {item.imagePath && (
-        <Image
-          source={{ uri: `${baseURL}/${item.imagePath}` }}
-          style={styles.image}
-        />
-      )}
-
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.desc}>{item.description}</Text>
-      <Text style={styles.price}>₹ {item.price}</Text>
-      <Text style={styles.category}>{item.category}</Text>
-
-      <TouchableOpacity style={styles.button} onPress={() => handleBuyNow(item)}>
-        <Text style={styles.buttonText}>Buy Now</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
+export default function ShowcaseScreen() {
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Showcase</Text>
 
-      {/* 🌟 Top Page Title Added Here */}
-      <Text style={styles.pageTitle}>Product Details!!</Text>
-
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        numColumns={2}  // ← shows 2 items per row
-       columnWrapperStyle={{ justifyContent: "space-between" }} // spacing
-      />
+      <View style={styles.card}>
+        <Text style={styles.emoji}>🎨</Text>
+        <Text style={styles.heading}>Showcase launching soon</Text>
+        <Text style={styles.subText}>
+          Artists will soon be able to showcase their{"\n"}
+          products, services and creative work here.
+        </Text>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: "#fff" },
+/* ---------------- STYLES ---------------- */
 
-  // 🌟 Style for Page Title
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 15,
-    marginTop: 10,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
 
+  title: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 20,
+  },
 
   card: {
-  width: "48%",   // ← important
-  padding: 15,
-  backgroundColor: "#f8f8f8",
-  marginBottom: 15,
-  borderRadius: 10,
-  elevation: 2,
-},
-
-  image: { width: "100%", height: 180, borderRadius: 10 },
-  title: { fontSize: 18, fontWeight: "bold", marginTop: 10 },
-  desc: { fontSize: 14, color: "#555", marginVertical: 5 },
-  price: { fontSize: 16, fontWeight: "bold", color: "green" },
-  category: { fontSize: 14, fontStyle: "italic", color: "#444" },
-  button: {
-    marginTop: 10,
-    backgroundColor: "#007bff",
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: Colors.white,
+    width: "100%",
+    padding: 30,
+    borderRadius: 20,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+
+  emoji: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+
+  heading: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 10,
+    textAlign: "center",
+  },
+
+  subText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
 });

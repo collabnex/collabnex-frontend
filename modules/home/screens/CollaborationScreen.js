@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../../global/services/env";
 
 const Collaboration = () => {
   const [profile, setProfile] = useState(null);
@@ -17,14 +18,14 @@ const Collaboration = () => {
       try {
         const token = await AsyncStorage.getItem("token");
 
-        const response = await axios.get(
-          "http://localhost:8080/api/users/me/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        const response = await axios.get(`${API_BASE_URL}/users/me/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
         );
+
 
         setProfile(response.data.data);
       } catch (err) {
