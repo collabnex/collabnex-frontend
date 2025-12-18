@@ -14,6 +14,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RNPickerSelect from "react-native-picker-select";
 import * as ImagePicker from "expo-image-picker";
+import { uploadImageToS3 } from "../services/imageUploadService";
 
 import { API_BASE_URL } from "../../global/services/env";
 import { Colors } from "../../global/theme/colors";
@@ -70,13 +71,26 @@ export default function SellProductForm({ navigation }) {
       setLoading(true);
       const token = await AsyncStorage.getItem("token");
 
+      if (!token) {
+        Alert.alert("Unauthorized", "You need to login first");
+        setLoading(false);
+        return;
+      }
+
+      // 🔥 STEP 1: Upload image to S3 (ONLY if image exists)
+      let uploadedImageUrl = "";
+      if (form.imagePath) {
+        uploadedImageUrl = await uploadImageToS3(form.imagePath);
+      }
+
+      // 🔥 STEP 2: Send S3 URL to backend
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
         price: Number(form.price),
         stock: Number(form.stock),
         category: form.category,
-        imagePath: form.imagePath, // temp
+        imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
       };
 
       await axios.post(`${API_BASE_URL}/physical-products`, payload, {
