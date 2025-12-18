@@ -1,5 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
 import WelcomeScreen from "../auth/screens/WelcomeScreen";
 import SignupScreen from "../auth/screens/SignupScreen";
 import LoginScreen from "../auth/screens/LoginScreen";
@@ -11,8 +12,8 @@ import HomeTabs from "../home/HomeTabs";
 import BuyNow from "../marketplace/screens/BuyNow";
 
 import ShowcaseScreen from "../home/screens/ShowcaseScreen";
-
-
+import MyEvents from "../events/screens/MyEvents";
+import AddEvents from "../events/screens/addEvents"; 
 
 const Stack = createNativeStackNavigator();
 
@@ -24,8 +25,10 @@ const AuthNavigator = () => (
     <Stack.Screen name="CreateProfile" component={CreateProfile} />
     <Stack.Screen name="Dashboard" component={DashboardScreen} />
     <Stack.Screen name="Home" component={HomeTabs} />
-   <Stack.Screen name="Showcase" component={ShowcaseScreen} />
-    <Stack.Screen name="BuyNow" component={BuyNow} /> 
+    <Stack.Screen name="Showcase" component={ShowcaseScreen} />
+    <Stack.Screen name="AddEvents" component={AddEvents} />
+    <Stack.Screen name="MyEvents" component={MyEvents} />
+    <Stack.Screen name="BuyNow" component={BuyNow} />
   </Stack.Navigator>
 );
 
