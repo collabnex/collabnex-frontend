@@ -89,37 +89,34 @@ export default function SellServiceScreen({ navigation }) {
 
   /* ================= SUBMIT ================= */
   const handleSubmit = async () => {
-  if (!isFormValid) {
-    Alert.alert(
-      "Validation Error",
-      "Please fix the errors before submitting."
-    );
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const token = await AsyncStorage.getItem("token");
-    if (!token) {
+    if (!isFormValid) {
       Alert.alert(
-        "Authentication Error",
-        "User token not found. Please login."
+        "Validation Error",
+        "Please fix the errors before submitting."
       );
-      setLoading(false);
       return;
     }
 
-    // 🔥 STEP 1: Upload image to S3 (ONLY if image exists)
-    let uploadedImageUrl = "";
-    if (form.imagePath) {
-      uploadedImageUrl = await uploadImageToS3(form.imagePath);
-    if (!isFormValid) return;
-
     setLoading(true);
+
     try {
       const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert(
+          "Authentication Error",
+          "User token not found. Please login."
+        );
+        setLoading(false);
+        return;
+      }
 
+      // 🔥 STEP 1: Upload image to S3 (ONLY if image exists)
+      let uploadedImageUrl = "";
+      if (form.imagePath) {
+        uploadedImageUrl = await uploadImageToS3(form.imagePath);
+      }
+
+      // 🔥 STEP 2: Send S3 URL to backend
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
@@ -128,70 +125,42 @@ export default function SellServiceScreen({ navigation }) {
         category:
           form.category === "Other"
             ? form.customCategory.trim()
-            : form.category,
-        imagePath: form.imagePath,
+            : form.category.trim(),
+        imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
       };
 
-      await axios.post(`${API_BASE_URL}/service-products`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/service-products`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      Alert.alert("Success", "Service listed successfully");
-      navigation.replace("Marketplace");
-    } catch (err) {
-      Alert.alert("Error", "Failed to submit service");
+      Alert.alert("Success", "Service listed successfully!");
+      console.log("Response:", response.data);
+
+      // 🔄 Reset form
+      setForm({
+        title: "",
+        description: "",
+        price: "",
+        deliveryTime: "",
+        category: "",
+        customCategory: "",
+        imagePath: "",
+      });
+    } catch (error) {
+      console.log("Sell Service Error:", error.response || error.message);
+      const message = error.response?.data?.message || "Something went wrong";
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
-
-    // 🔥 STEP 2: Send S3 URL to backend
-    const payload = {
-      title: form.title.trim(),
-      description: form.description.trim(),
-      price: parseFloat(form.price),
-      deliveryTimeDays: parseInt(form.deliveryTime),
-      category:
-        form.category === "Other"
-          ? form.customCategory.trim()
-          : form.category.trim(),
-      imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
-    };
-
-    const response = await axios.post(
-      `${BASE_URL}/service-products`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    Alert.alert("Success", "Service listed successfully!");
-    console.log("Response:", response.data);
-
-    // 🔄 Reset form
-    setForm({
-      title: "",
-      description: "",
-      price: "",
-      deliveryTime: "",
-      category: "",
-      customCategory: "",
-      imagePath: "",
-    });
-  } catch (error) {
-    console.log("Sell Service Error:", error.response || error.message);
-    const message = error.response?.data?.message || "Something went wrong";
-    Alert.alert("Error", message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   /* ================= UI ================= */
