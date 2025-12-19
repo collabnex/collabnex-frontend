@@ -125,7 +125,8 @@ const EventsScreen = () => {
           ]}
           disabled={item.availableSeats === 0}
           onPress={() =>
-            navigation.navigate("BuyNow", { eventId: item.id })
+            navigation.navigate("BookEvent", { eventId: item.id })
+
           }
         >
           <Text style={styles.bookBtnText}>
