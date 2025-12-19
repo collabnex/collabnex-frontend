@@ -6,7 +6,8 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert
+  Alert,
+  Platform
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../global/services/env";
@@ -16,19 +17,15 @@ import { API_BASE_URL } from "../../global/services/env";
 ========================= */
 
 const AddEvents = ({ navigation }) => {
-  const fieldRefs = {
-    title: useRef(null),
-    startDate: useRef(null),
-    endDate: useRef(null)
-  };
+  const titleRef = useRef(null);
 
   const [form, setForm] = useState({
     title: "",
     description: "",
-    eventType: "OFFLINE",
     location: "",
     startDate: "",
     endDate: "",
+    month: "",
     ticketPrice: "",
     totalSeats: ""
   });
@@ -37,7 +34,7 @@ const AddEvents = ({ navigation }) => {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   /* =========================
-     DATE HELPERS
+     VALIDATION
   ========================= */
 
   const toISODate = (value) => {
@@ -51,16 +48,7 @@ const AddEvents = ({ navigation }) => {
     return !isNaN(date.getTime());
   };
 
-  const isFormValid = () => {
-    if (!form.title.trim()) return false;
-    if (!isValidDate(form.startDate)) return false;
-    if (!isValidDate(form.endDate)) return false;
-
-    const start = toISODate(form.startDate);
-    const end = toISODate(form.endDate);
-
-    return end >= start;
-  };
+  
 
   const scrollToFirstInvalid = () => {
     if (!form.title.trim()) return fieldRefs.title.current?.focus();
@@ -70,28 +58,36 @@ const AddEvents = ({ navigation }) => {
       return fieldRefs.endDate.current?.focus();
   };
 
+  const isFormValid = () => {
+    if (!form.title.trim()) return false;
+    if (!form.startDate) return false;
+    if (!form.endDate) return false;
+    if (!form.month) return false;
+    if (new Date(form.endDate) < new Date(form.startDate)) return false;
+    return true;
+  };
+
   /* =========================
      SUBMIT
   ========================= */
 
   const handleSubmit = async () => {
     if (!isFormValid()) {
-      scrollToFirstInvalid();
-      Alert.alert("Incomplete Form", "Please fill all required fields correctly");
+      Alert.alert("Invalid Form", "Please fill all required fields correctly");
       return;
     }
 
     const payload = {
       title: form.title,
       description: form.description,
-      eventType: form.eventType,
       locationText: form.location,
-      startDatetime: toISODate(form.startDate).toISOString(),
-      endDatetime: toISODate(form.endDate).toISOString(),
+      startDatetime: new Date(form.startDate).toISOString(),
+      endDatetime: new Date(form.endDate).toISOString(),
+      eventMonth: form.month,
       ticketPrice: Number(form.ticketPrice || 0),
-      currency: "INR",
       totalSeats: Number(form.totalSeats || 0),
       availableSeats: Number(form.totalSeats || 0),
+      currency: "INR",
       status: "PUBLISHED"
     };
 
@@ -104,7 +100,7 @@ const AddEvents = ({ navigation }) => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/events`, {
+      const res = await fetch(`${API_BASE_URL}/events`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -113,18 +109,14 @@ const AddEvents = ({ navigation }) => {
         body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
-        Alert.alert("Success", "Event created successfully", [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("MyEvents")
-          }
+      if (res.ok) {
+        Alert.alert("Success", "Event created", [
+          { text: "OK", onPress: () => navigation.navigate("MyEvents") }
         ]);
       } else {
-        const err = await response.text();
-        Alert.alert("Error", err || "Failed to create event");
+        Alert.alert("Error", "Failed to create event");
       }
-    } catch {
+    } catch (e) {
       Alert.alert("Error", "Something went wrong");
     }
   };
@@ -153,99 +145,103 @@ const AddEvents = ({ navigation }) => {
 
       <Text style={styles.heading}>Create Event</Text>
 
-      {/* BASIC DETAILS */}
+      {/* TITLE */}
       <View style={styles.card}>
         <Label text="Event Title *" />
-        <Input
-          ref={fieldRefs.title}
-          placeholder="e.g. Live Music Night"
+        <TextInput
+          ref={titleRef}
+          style={styles.input}
           value={form.title}
           onChangeText={(v) => update("title", v)}
         />
       </View>
 
-      {/* DATE */}
+      {/* DATE PICKERS */}
       <View style={styles.card}>
         <Label text="Start Date *" />
-        <Input
-          ref={fieldRefs.startDate}
-          placeholder="DD-MM-YYYY"
-          value={form.startDate}
-          onChangeText={(v) => update("startDate", v)}
-        />
+        {Platform.OS === "web" ? (
+          <input
+            type="date"
+            style={styles.webInput}
+            value={form.startDate}
+            onChange={(e) => update("startDate", e.target.value)}
+          />
+        ) : (
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM-DD"
+            value={form.startDate}
+            onChangeText={(v) => update("startDate", v)}
+          />
+        )}
 
         <Label text="End Date *" />
-        <Input
-          ref={fieldRefs.endDate}
-          placeholder="DD-MM-YYYY"
-          value={form.endDate}
-          onChangeText={(v) => update("endDate", v)}
-        />
+        {Platform.OS === "web" ? (
+          <input
+            type="date"
+            style={styles.webInput}
+            value={form.endDate}
+            onChange={(e) => update("endDate", e.target.value)}
+          />
+        ) : (
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM-DD"
+            value={form.endDate}
+            onChangeText={(v) => update("endDate", v)}
+          />
+        )}
       </View>
 
-      {/* OPTIONAL */}
+      {/* MONTH PICKER */}
+      <View style={styles.card}>
+        <Label text="Event Month *" />
+        {Platform.OS === "web" ? (
+          <input
+            type="month"
+            style={styles.webInput}
+            value={form.month}
+            onChange={(e) => update("month", e.target.value)}
+          />
+        ) : (
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM"
+            value={form.month}
+            onChangeText={(v) => update("month", v)}
+          />
+        )}
+      </View>
+
+      {/* DETAILS */}
       <View style={styles.card}>
         <Label text="Description" />
-        <Input
+        <TextInput
+          style={[styles.input, styles.textArea]}
           multiline
           value={form.description}
           onChangeText={(v) => update("description", v)}
         />
 
         <Label text="Location" />
-        <Input
+        <TextInput
+          style={styles.input}
           value={form.location}
           onChangeText={(v) => update("location", v)}
         />
       </View>
 
-      {/* TICKETS */}
-      <View style={styles.card}>
-        <Label text="Ticket Price (₹)" />
-        <Input
-          keyboardType="numeric"
-          value={form.ticketPrice}
-          onChangeText={(v) => update("ticketPrice", v)}
-        />
-
-        <Label text="Total Seats" />
-        <Input
-          keyboardType="numeric"
-          value={form.totalSeats}
-          onChangeText={(v) => update("totalSeats", v)}
-        />
-      </View>
-
       {/* SUBMIT */}
       <TouchableOpacity
-        style={[
-          styles.submitBtn,
-          !formValid && styles.submitBtnDisabled
-        ]}
+        style={[styles.submitBtn, !formValid && styles.submitBtnDisabled]}
         disabled={!formValid}
         onPress={handleSubmit}
       >
-        <Text style={styles.submitText}>
-          {formValid ? "Create Event" : "Complete Required Fields"}
-        </Text>
+        <Text style={styles.submitText}>Create Event</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
-
-/* =========================
-   REUSABLE
-========================= */
-
-const Label = ({ text }) => <Text style={styles.label}>{text}</Text>;
-
-const Input = React.forwardRef((props, ref) => (
-  <TextInput
-    ref={ref}
-    style={[styles.input, props.multiline && styles.textArea]}
-    {...props}
-  />
-));
 
 /* =========================
    STYLES
@@ -312,6 +308,14 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     marginBottom: 12
   },
+  webInput: {
+    width: "100%",
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #E5E7EB",
+    marginBottom: 12,
+    fontSize: 15
+  },
   textArea: {
     height: 80
   },
@@ -330,5 +334,7 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   }
 });
+
+const Label = ({ text }) => <Text style={styles.label}>{text}</Text>;
 
 export default AddEvents;
