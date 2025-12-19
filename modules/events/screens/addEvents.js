@@ -37,6 +37,27 @@ const AddEvents = ({ navigation }) => {
      VALIDATION
   ========================= */
 
+  const toISODate = (value) => {
+    const [day, month, year] = value.split("-");
+    return new Date(`${year}-${month}-${day}T00:00:00Z`);
+  };
+
+  const isValidDate = (value) => {
+    if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) return false;
+    const date = toISODate(value);
+    return !isNaN(date.getTime());
+  };
+
+  
+
+  const scrollToFirstInvalid = () => {
+    if (!form.title.trim()) return fieldRefs.title.current?.focus();
+    if (!isValidDate(form.startDate))
+      return fieldRefs.startDate.current?.focus();
+    if (!isValidDate(form.endDate))
+      return fieldRefs.endDate.current?.focus();
+  };
+
   const isFormValid = () => {
     if (!form.title.trim()) return false;
     if (!form.startDate) return false;
@@ -108,6 +129,20 @@ const AddEvents = ({ navigation }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* 🔝 TOP BUTTONS */}
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("MyEvents")}
+        >
+          <Text style={styles.buttonText}>My Events</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.buttonActive}>
+          <Text style={styles.buttonTextActive}>Add Event</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.heading}>Create Event</Text>
 
       {/* TITLE */}
@@ -217,6 +252,38 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#F4F6FA"
   },
+
+  /* TOP BAR */
+  topBar: {
+    flexDirection: "row",
+    marginBottom: 16
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    marginRight: 8
+  },
+  buttonActive: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#007AFF",
+    alignItems: "center",
+    marginLeft: 8
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600"
+  },
+  buttonTextActive: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF"
+  },
+
   heading: {
     fontSize: 24,
     fontWeight: "700",
