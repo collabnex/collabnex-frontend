@@ -4,12 +4,13 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../global/services/env";
 
-const MyEvents = () => {
+const MyEvents = ({ navigation }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -88,6 +89,21 @@ const MyEvents = () => {
 
   return (
     <View style={styles.container}>
+      {/* 🔝 TOP BUTTONS */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.activeBtn}>
+          <Text style={styles.activeText}>My Events</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={() => navigation.navigate("AddEvents")}
+        >
+          <Text style={styles.primaryText}>Add Event</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* LIST */}
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
@@ -106,12 +122,49 @@ const MyEvents = () => {
   );
 };
 
+/* =========================
+   STYLES
+========================= */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
     backgroundColor: "#F8F9FB"
   },
+
+  /* TOP BAR */
+  topBar: {
+    flexDirection: "row",
+    marginBottom: 16
+  },
+  activeBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#D1D5DB",
+    alignItems: "center",
+    marginRight: 8
+  },
+  activeText: {
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  primaryBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#007AFF",
+    alignItems: "center",
+    marginLeft: 8
+  },
+  primaryText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600"
+  },
+
+  /* CARD */
   card: {
     backgroundColor: "#FFFFFF",
     padding: 16,

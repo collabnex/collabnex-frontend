@@ -14,6 +14,7 @@ import BuyNow from "../marketplace/screens/BuyNow";
 import ShowcaseScreen from "../home/screens/ShowcaseScreen";
 import MyEvents from "../events/screens/MyEvents";
 import AddEvents from "../events/screens/addEvents"; 
+import EventDetails from "../events/screens/Eventdetails";
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +30,8 @@ const AuthNavigator = () => (
     <Stack.Screen name="AddEvents" component={AddEvents} />
     <Stack.Screen name="MyEvents" component={MyEvents} />
     <Stack.Screen name="BuyNow" component={BuyNow} />
+    <Stack.Screen name="EventDetails" component={EventDetails} />
+
   </Stack.Navigator>
 );
 
