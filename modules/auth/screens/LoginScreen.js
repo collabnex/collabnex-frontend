@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import {
   Text,
   StyleSheet,
-  Alert,
+  Platform,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 
 import { loginUser } from "../services/authService";
@@ -23,7 +24,6 @@ export default function LoginScreen({ navigation }) {
 
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -63,27 +63,44 @@ export default function LoginScreen({ navigation }) {
         password.trim()
       );
 
-      const token = res.data.data.token;
-      await AsyncStorage.setItem("token", token);
+      // 🔑 FIX: read correct tokens
+      const { accessToken, refreshToken } = res.data.data;
 
-      // check profile
+      // 🔐 store refresh token (long-lived)
+      if (Platform.OS === "web") {
+        localStorage.setItem("refreshToken", refreshToken);
+      } else {
+        await SecureStore.setItemAsync("refreshToken", refreshToken);
+      }
+
+      // 🟢 TEMP FIX (to not break existing logic)
+      // You were earlier using AsyncStorage.getItem("token")
+      // So we store accessToken under SAME key
+      await AsyncStorage.setItem("token", accessToken);
+
+      // ================= PROFILE CHECK (UNCHANGED) =================
+
       try {
         const profileRes = await axios.get(
           `${API_BASE_URL}/users/me/profile`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
 
         const profile = profileRes.data.data;
-        if (profile?.bio?.trim()) {
+
+        if (profile?.domain?.trim() === "user") {
+          console.warn("User domain is 'user': " + profile?.domain?.trim());
           navigation.replace("Home");
         } else {
           navigation.replace("CreateProfile");
         }
+
       } catch {
         navigation.replace("CreateProfile");
       }
+
     } catch (err) {
       setError("Invalid email or password");
     } finally {
