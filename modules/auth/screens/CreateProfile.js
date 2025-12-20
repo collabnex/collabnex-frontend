@@ -8,32 +8,20 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { API_BASE_URL } from "../../global/services/env";
 
 import DropDownPicker from "react-native-dropdown-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
+import { API_BASE_URL } from "../../global/services/env";
+
 export default function CreateProfile() {
   const navigation = useNavigation();
   const scrollRef = useRef();
 
-  // ================= ROLE =================
-  const [role, setRole] = useState(null); // "ARTIST" | "USER"
-
-  // ================= REFS =================
-  const inputsRef = {
-    fullName: useRef(),
-    bio: useRef(),
-    profession: useRef(),
-    yearsOfExperience: useRef(),
-    country: useRef(),
-    stateName: useRef(),
-    city: useRef(),
-  };
-
-  const [errors, setErrors] = useState({});
+  // ================= STEP CONTROL =================
+  const [selectedRole, setSelectedRole] = useState(null);
 
   // ================= FORM STATE =================
   const [fullName, setFullName] = useState("");
@@ -48,6 +36,19 @@ export default function CreateProfile() {
   const [linkedin, setLinkedin] = useState("");
   const [instagram, setInstagram] = useState("");
   const [website, setWebsite] = useState("");
+
+  const [errors, setErrors] = useState({});
+
+  // ================= ARTIST CATEGORY =================
+  const [openArtistCategory, setOpenArtistCategory] = useState(false);
+  const [artistCategory, setArtistCategory] = useState(null);
+  const [artistCategoryList] = useState([
+    { label: "Singer", value: "Singer" },
+    { label: "Dancer", value: "Dancer" },
+    { label: "Painter", value: "Painter" },
+    { label: "Actor", value: "Actor" },
+    { label: "Musician", value: "Musician" },
+  ]);
 
   // ================= SKILLS =================
   const [openSkills, setOpenSkills] = useState(false);
@@ -69,15 +70,36 @@ export default function CreateProfile() {
     { label: "Problem Solver", value: "Problem Solver" },
   ]);
 
-  // ================= SUBMIT =================
-  const handleSubmit = async () => {
+  // ================= USER FLOW =================
+  const continueAsUser = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Session expired", "Please login again");
+        return;
+      }
+
+      await axios.put(
+        `${API_BASE_URL}/profile/me/domain`,
+        { domain: "user" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      navigation.replace("Home");
+    } catch {
+      Alert.alert("Error", "Unable to continue as user");
+    }
+  };
+
+  // ================= ARTIST SUBMIT =================
+  const handleArtistSubmit = async () => {
     let newErrors = {};
 
     if (!fullName.trim()) newErrors.fullName = "Full Name required";
     if (!bio.trim()) newErrors.bio = "Bio required";
     if (!profession.trim()) newErrors.profession = "Profession required";
-    if (!yearsOfExperience.trim())
-      newErrors.yearsOfExperience = "Experience required";
+    if (!yearsOfExperience.trim()) newErrors.yearsOfExperience = "Experience required";
+    if (!artistCategory) newErrors.artistCategory = "Select artist category";
     if (!country.trim()) newErrors.country = "Country required";
     if (!stateName.trim()) newErrors.stateName = "State required";
     if (!city.trim()) newErrors.city = "City required";
@@ -85,81 +107,58 @@ export default function CreateProfile() {
     if (tags.length === 0) newErrors.tags = "Select tags";
 
     setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      const firstKey = Object.keys(newErrors)[0];
-      inputsRef[firstKey]?.current?.measureLayout(
-        scrollRef.current,
-        (x, y) => scrollRef.current.scrollTo({ y: y - 40, animated: true })
-      );
-      return;
-    }
+    if (Object.keys(newErrors).length > 0) return;
 
     const payload = {
-      role: "ARTIST",
       fullName,
       bio,
       profession,
       yearsOfExperience: Number(yearsOfExperience),
-      skills: JSON.stringify(skills),
-      tags: JSON.stringify(tags),
+      artistCategory,                 // ✅ FIXED
+      skills,
+      tags,
       country,
       state: stateName,
       city,
-      socialLinks: JSON.stringify({ linkedin, instagram, website }),
+      socialLinks: {
+        linkedin,
+        instagram,
+        website,
+      },
     };
 
     try {
       const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Session expired", "Please login again");
+        return;
+      }
 
-      await axios.put(
-        `${API_BASE_URL}/profile/me`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.put(`${API_BASE_URL}/profile/me`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-
-
-
-      Alert.alert("Success", "Profile created successfully");
       navigation.replace("Home");
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Profile creation failed");
     }
   };
 
-  // ================= ROLE SELECTION SCREEN =================
-  if (!role) {
+  // ================= ROLE SELECTION =================
+  if (!selectedRole) {
     return (
       <View style={styles.roleContainer}>
         <Text style={styles.title}>Who are you?</Text>
-        <Text style={styles.subtitle}>
-          Choose one to continue
-        </Text>
 
-        <TouchableOpacity
-          style={styles.roleCard}
-          onPress={() => setRole("ARTIST")}
-        >
-          <Text style={styles.roleTitle}>🎨 I am an Artist</Text>
-          <Text style={styles.roleDesc}>
-            Showcase your skills & get discovered
-          </Text>
+        <TouchableOpacity style={styles.roleCard} onPress={continueAsUser}>
+          <Text style={styles.roleTitle}>👤 I am a User</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.roleCard}
-          onPress={() => navigation.replace("Home")}
+          onPress={() => setSelectedRole("ARTIST")}
         >
-          <Text style={styles.roleTitle}>👤 I am a User</Text>
-          <Text style={styles.roleDesc}>
-            Discover & collaborate with artists
-          </Text>
+          <Text style={styles.roleTitle}>🎨 I am an Artist</Text>
         </TouchableOpacity>
       </View>
     );
@@ -167,131 +166,88 @@ export default function CreateProfile() {
 
   // ================= ARTIST FORM =================
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={styles.screen}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={styles.title}>Artist Profile</Text>
-      <Text style={styles.subtitle}>
-        Tell us about your creative journey
-      </Text>
+    <ScrollView ref={scrollRef} style={styles.screen}>
+      <Text style={styles.title}>Create Artist Profile</Text>
 
       <View style={styles.card}>
-        <TextInput
-          ref={inputsRef.fullName}
-          style={styles.input}
-          placeholder="Full Name"
-          value={fullName}
-          onChangeText={setFullName}
-        />
+        <Text style={styles.label}>Full Name</Text>
+        <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
 
+        <Text style={styles.label}>Bio</Text>
         <TextInput
-          ref={inputsRef.bio}
           style={[styles.input, { height: 90 }]}
-          placeholder="Short Bio"
           multiline
           value={bio}
           onChangeText={setBio}
         />
 
-        <TextInput
-          ref={inputsRef.profession}
-          style={styles.input}
-          placeholder="Profession"
-          value={profession}
-          onChangeText={setProfession}
-        />
+        <Text style={styles.label}>Profession</Text>
+        <TextInput style={styles.input} value={profession} onChangeText={setProfession} />
 
+        <Text style={styles.label}>Years of Experience</Text>
         <TextInput
-          ref={inputsRef.yearsOfExperience}
           style={styles.input}
-          placeholder="Years of experience"
           keyboardType="numeric"
           value={yearsOfExperience}
           onChangeText={setYearsOfExperience}
         />
 
-        {/* SKILLS */}
+        <Text style={styles.label}>Artist Category</Text>
         <DropDownPicker
-          listMode="SCROLLVIEW"
+          open={openArtistCategory}
+          value={artistCategory}
+          items={artistCategoryList}
+          setOpen={setOpenArtistCategory}
+          setValue={setArtistCategory}
+          zIndex={4000}
+          style={styles.dropdown}
+        />
+
+        <Text style={styles.label}>Skills</Text>
+        <DropDownPicker
           open={openSkills}
           value={skills}
           items={skillsList}
-          setOpen={(v) => {
-            setOpenSkills(v);
-            setOpenTags(false);
-          }}
+          setOpen={setOpenSkills}
           setValue={setSkills}
           setItems={setSkillsList}
           multiple
-          style={[styles.dropdown, { zIndex: 3000 }]}
-          dropDownContainerStyle={{ zIndex: 3000 }}
+          zIndex={3000}
+          style={styles.dropdown}
         />
 
-        {/* TAGS */}
+        <Text style={styles.label}>Tags</Text>
         <DropDownPicker
-          listMode="SCROLLVIEW"
           open={openTags}
           value={tags}
           items={tagsList}
-          setOpen={(v) => {
-            setOpenTags(v);
-            setOpenSkills(false);
-          }}
+          setOpen={setOpenTags}
           setValue={setTags}
           setItems={setTagsList}
           multiple
-          style={[styles.dropdown, { zIndex: 2000 }]}
-          dropDownContainerStyle={{ zIndex: 2000 }}
+          zIndex={2000}
+          style={styles.dropdown}
         />
 
-        <TextInput
-          ref={inputsRef.country}
-          style={styles.input}
-          placeholder="Country"
-          value={country}
-          onChangeText={setCountry}
-        />
+        <Text style={styles.label}>Country</Text>
+        <TextInput style={styles.input} value={country} onChangeText={setCountry} />
 
-        <TextInput
-          ref={inputsRef.stateName}
-          style={styles.input}
-          placeholder="State"
-          value={stateName}
-          onChangeText={setStateName}
-        />
+        <Text style={styles.label}>State</Text>
+        <TextInput style={styles.input} value={stateName} onChangeText={setStateName} />
 
-        <TextInput
-          ref={inputsRef.city}
-          style={styles.input}
-          placeholder="City"
-          value={city}
-          onChangeText={setCity}
-        />
+        <Text style={styles.label}>City</Text>
+        <TextInput style={styles.input} value={city} onChangeText={setCity} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="LinkedIn"
-          value={linkedin}
-          onChangeText={setLinkedin}
-        />
+        <Text style={styles.label}>LinkedIn</Text>
+        <TextInput style={styles.input} value={linkedin} onChangeText={setLinkedin} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Instagram"
-          value={instagram}
-          onChangeText={setInstagram}
-        />
+        <Text style={styles.label}>Instagram</Text>
+        <TextInput style={styles.input} value={instagram} onChangeText={setInstagram} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Website / Portfolio"
-          value={website}
-          onChangeText={setWebsite}
-        />
+        <Text style={styles.label}>Website</Text>
+        <TextInput style={styles.input} value={website} onChangeText={setWebsite} />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+        <TouchableOpacity style={styles.button} onPress={handleArtistSubmit}>
           <Text style={styles.buttonText}>Save & Continue</Text>
         </TouchableOpacity>
       </View>
@@ -299,88 +255,24 @@ export default function CreateProfile() {
   );
 }
 
-/* ================= STYLES ================= */
-
+// ================= STYLES =================
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: "#F6F4FF",
-    padding: 16,
-  },
-
-  roleContainer: {
-    flex: 1,
-    backgroundColor: "#F6F4FF",
-    justifyContent: "center",
-    padding: 24,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    textAlign: "center",
-    color: "#2D1B69",
-  },
-
-  subtitle: {
-    textAlign: "center",
-    color: "#6E6E85",
-    marginBottom: 24,
-  },
-
-  roleCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 18,
-    marginBottom: 16,
-    elevation: 3,
-  },
-
-  roleTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#592FE4",
-    marginBottom: 6,
-  },
-
-  roleDesc: {
-    fontSize: 14,
-    color: "#6B6B80",
-  },
-
-  card: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 18,
-    elevation: 3,
-  },
-
+  screen: { backgroundColor: "#F6F4FF", padding: 16 },
+  roleContainer: { flex: 1, justifyContent: "center", padding: 24 },
+  title: { fontSize: 26, fontWeight: "700", textAlign: "center", marginBottom: 16 },
+  roleCard: { backgroundColor: "#fff", padding: 20, borderRadius: 16, marginBottom: 12 },
+  roleTitle: { fontSize: 18, fontWeight: "700" },
+  card: { backgroundColor: "#fff", padding: 20, borderRadius: 18 },
+  label: { fontWeight: "600", marginBottom: 6, marginTop: 10 },
   input: {
     backgroundColor: "#FAF9FF",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#D9D4FF",
     padding: 14,
-    marginBottom: 14,
+    marginBottom: 10,
   },
-
-  dropdown: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#D9D4FF",
-    marginBottom: 14,
-  },
-
-  button: {
-    backgroundColor: "#592FE4",
-    padding: 16,
-    borderRadius: 18,
-    marginTop: 20,
-  },
-
-  buttonText: {
-    color: "#FFFFFF",
-    textAlign: "center",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  dropdown: { borderColor: "#D9D4FF", borderRadius: 12, marginBottom: 12 },
+  button: { backgroundColor: "#592FE4", padding: 16, borderRadius: 18, marginTop: 20 },
+  buttonText: { color: "#fff", textAlign: "center", fontWeight: "700" },
 });
