@@ -4,37 +4,50 @@ import {
   Text,
   Image,
   ScrollView,
-  StyleSheet
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 import { API_BASE_URL } from "../../global/services/env";
 
 const Collaboration = () => {
+  const navigation = useNavigation(); // ✅ REQUIRED
   const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
 
-        const response = await axios.get(`${API_BASE_URL}/users/me/profile`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        const response = await axios.get(
+          `${API_BASE_URL}/profile/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-
 
         setProfile(response.data.data);
       } catch (err) {
         console.log("API Error:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProfile();
   }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#6D28D9" />
+      </View>
+    );
+  }
 
   if (!profile) return null;
 
@@ -43,95 +56,82 @@ const Collaboration = () => {
   const social = JSON.parse(profile.socialLinks || "{}");
 
   return (
-    <ScrollView style={styles.container}>
-      
-      {/* ------------------ HEADER ------------------ */}
-      <View style={styles.headerBanner} />
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* ================= HERO ================= */}
+      <View style={styles.hero}>
 
-      {/* ------------------ PROFILE CARD ------------------ */}
-      <View style={styles.profileContainer}>
-        
-        {/* Profile Image */}
-        <View style={styles.profileImageWrapper}>
+        {/* ⚙️ SETTINGS BUTTON */}
+        <TouchableOpacity
+          style={styles.settingsBtn}
+          onPress={() => navigation.navigate("Settings")}
+        >
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
+
+        <View style={styles.avatarWrapper}>
           {profile.profileImageUrl ? (
-            <Image
-              source={{ uri: profile.profileImageUrl }}
-              style={styles.profileImage}
-            />
+            <Image source={{ uri: profile.profileImageUrl }} style={styles.avatar} />
           ) : (
-            <View style={styles.placeholderImage}>
-              <Text style={styles.placeholderText}>
-                {profile.fullName?.charAt(0)}
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarText}>
+                {profile.fullName?.charAt(0)?.toUpperCase()}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Name */}
         <Text style={styles.name}>{profile.fullName}</Text>
 
-        {/* Profession */}
-        <Text style={styles.profession}>{profile.profession}</Text>
-
-        {/* Location */}
-        <Text style={styles.location}>
-          {profile.city}, {profile.state}, {profile.country}
-        </Text>
-
-      </View>
-
-      {/* ------------------ ABOUT SECTION ------------------ */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>About</Text>
-        <Text style={styles.cardText}>{profile.bio}</Text>
-      </View>
-
-      {/* ------------------ EXPERIENCE ------------------ */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Experience</Text>
-        <Text style={styles.cardText}>
-          {profile.yearsOfExperience} years
-        </Text>
-      </View>
-
-      {/* ------------------ SKILLS ------------------ */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Skills</Text>
-        <View style={styles.badgeContainer}>
-          {skills.map((skill, index) => (
-            <View key={index} style={styles.skillBadge}>
-              <Text style={styles.skillText}>{skill}</Text>
-            </View>
-          ))}
+        <View style={styles.domainBadge}>
+          <Text style={styles.domainText}>
+            🎤 {profile.domain?.toUpperCase()}
+          </Text>
         </View>
+
+        <Text style={styles.location}>📍 {profile.city || "—"}</Text>
       </View>
 
-      {/* ------------------ TAGS ------------------ */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Professional Traits</Text>
-        <View style={styles.badgeContainer}>
-          {tags.map((tag, index) => (
-            <View key={index} style={styles.tagBadge}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      <Section title="🧠 About">
+        <Text style={styles.text}>{profile.bio || "No bio provided"}</Text>
+      </Section>
 
-      {/* ------------------ SOCIAL LINKS ------------------ */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Social Links</Text>
+      <Section title="💼 Profession">
+        <Text style={styles.text}>{profile.profession || "Not specified"}</Text>
+      </Section>
 
-        <Text style={styles.linkText}>
-          Website: <Text style={styles.bold}>{social.website || "N/A"}</Text>
+      <Section title="⏳ Experience">
+        <Text style={styles.text}>
+          {profile.yearsOfExperience
+            ? `${profile.yearsOfExperience} years`
+            : "Not mentioned"}
         </Text>
-        <Text style={styles.linkText}>
-          LinkedIn: <Text style={styles.bold}>{social.linkedin || "N/A"}</Text>
-        </Text>
-        <Text style={styles.linkText}>
-          Instagram: <Text style={styles.bold}>{social.instagram || "N/A"}</Text>
-        </Text>
-      </View>
+      </Section>
+
+      {skills.length > 0 && (
+        <Section title="🛠 Skills">
+          <View style={styles.badgeWrap}>
+            {skills.map((s, i) => (
+              <Badge key={i} text={s} />
+            ))}
+          </View>
+        </Section>
+      )}
+
+      {tags.length > 0 && (
+        <Section title="✨ Professional Traits">
+          <View style={styles.badgeWrap}>
+            {tags.map((t, i) => (
+              <OutlineBadge key={i} text={t} />
+            ))}
+          </View>
+        </Section>
+      )}
+
+      <Section title="🔗 Social Links">
+        <InfoRow label="Website" value={social.website} />
+        <InfoRow label="LinkedIn" value={social.linkedin} />
+        <InfoRow label="Instagram" value={social.instagram} />
+      </Section>
 
       <View style={{ height: 40 }} />
     </ScrollView>
@@ -140,141 +140,80 @@ const Collaboration = () => {
 
 export default Collaboration;
 
-/* ------------------ STYLES ------------------ */
+/* ---------- SMALL COMPONENTS ---------- */
+
+const Section = ({ title, children }) => (
+  <View style={styles.card}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    {children}
+  </View>
+);
+
+const Badge = ({ text }) => (
+  <View style={styles.badge}>
+    <Text style={styles.badgeText}>{text}</Text>
+  </View>
+);
+
+const OutlineBadge = ({ text }) => (
+  <View style={styles.outlineBadge}>
+    <Text style={styles.outlineBadgeText}>{text}</Text>
+  </View>
+);
+
+const InfoRow = ({ label, value }) => (
+  <Text style={styles.infoText}>
+    {label}: <Text style={styles.infoValue}>{value || "N/A"}</Text>
+  </Text>
+);
+
+/* ---------- STYLES ---------- */
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F5FF",
-  },
+  container: { flex: 1, backgroundColor: "#F8F7FF" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  headerBanner: {
-    height: 150,
-    backgroundColor: "#6B21A8",
-    width: "100%",
-  },
-
-  profileContainer: {
-    marginTop: -70,
+  hero: {
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingVertical: 40,
+    backgroundColor: "#6D28D9",
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
 
-  profileImageWrapper: {
-    elevation: 6,
+  settingsBtn: {
+    position: "absolute",
+    top: 40,
+    right: 20,
   },
+  settingsIcon: { fontSize: 24, color: "#FFF" },
 
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: "#FFF",
+  avatarWrapper: { elevation: 6, marginBottom: 10 },
+  avatar: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: "#FFF" },
+  avatarFallback: {
+    width: 120, height: 120, borderRadius: 60,
+    backgroundColor: "#EDE9FE",
+    justifyContent: "center", alignItems: "center",
+    borderWidth: 4, borderColor: "#FFF",
   },
+  avatarText: { fontSize: 42, fontWeight: "800", color: "#6D28D9" },
 
-  placeholderImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#E9D5FF",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 4,
-    borderColor: "#FFF",
-  },
+  name: { fontSize: 26, fontWeight: "800", color: "#FFF" },
+  domainBadge: { marginTop: 6, backgroundColor: "#FFF", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  domainText: { color: "#6D28D9", fontWeight: "700" },
+  location: { marginTop: 8, color: "#EDE9FE" },
 
-  placeholderText: {
-    fontSize: 40,
-    fontWeight: "bold",
-    color: "#6B21A8",
-  },
+  card: { backgroundColor: "#FFF", margin: 16, padding: 18, borderRadius: 16, elevation: 3 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#6D28D9", marginBottom: 10 },
+  text: { fontSize: 15, color: "#333" },
 
-  name: {
-    marginTop: 15,
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#1A1A1A",
-  },
+  badgeWrap: { flexDirection: "row", flexWrap: "wrap" },
+  badge: { backgroundColor: "#EDE9FE", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginRight: 8, marginBottom: 8 },
+  badgeText: { color: "#6D28D9", fontWeight: "600" },
 
-  profession: {
-    marginTop: 4,
-    fontSize: 16,
-    color: "#6B21A8",
-    fontWeight: "600",
-  },
+  outlineBadge: { borderColor: "#A78BFA", borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginRight: 8, marginBottom: 8 },
+  outlineBadgeText: { color: "#6D28D9", fontWeight: "600" },
 
-  location: {
-    marginTop: 6,
-    color: "#555",
-    fontSize: 14,
-  },
-
-  /* Card Styling */
-  card: {
-    backgroundColor: "#FFF",
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 18,
-    borderRadius: 14,
-    elevation: 3,
-  },
-
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#6B21A8",
-    marginBottom: 8,
-  },
-
-  cardText: {
-    fontSize: 15,
-    color: "#333",
-    lineHeight: 22,
-  },
-
-  badgeContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 6,
-  },
-
-  skillBadge: {
-    backgroundColor: "#E9D5FF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-
-  skillText: {
-    color: "#5B21B6",
-    fontWeight: "600",
-  },
-
-  tagBadge: {
-    borderColor: "#A855F7",
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-
-  tagText: {
-    color: "#7E22CE",
-    fontWeight: "600",
-  },
-
-  linkText: {
-    marginTop: 6,
-    fontSize: 15,
-    color: "#444",
-  },
-
-  bold: {
-    fontWeight: "bold",
-    color: "#111",
-  },
+  infoText: { fontSize: 15, marginBottom: 6, color: "#444" },
+  infoValue: { fontWeight: "700", color: "#111" },
 });
-

@@ -10,12 +10,12 @@ import DashboardScreen from "../home/screens/dashboard";
 import HomeTabs from "../home/HomeTabs";
 
 import BuyNow from "../marketplace/screens/BuyNow";
-
+import SettingsScreen from "../home/screens/SettingsScreen";
 import ShowcaseScreen from "../home/screens/ShowcaseScreen";
 import MyEvents from "../events/screens/MyEvents";
-import AddEvents from "../events/screens/addEvents"; 
+import AddEvents from "../events/screens/addEvents";
 import EventDetails from "../events/screens/Eventdetails";
-
+import ArtistListScreen from "../home/screens/ArtistListScreen";
 const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
@@ -31,7 +31,12 @@ const AuthNavigator = () => (
     <Stack.Screen name="MyEvents" component={MyEvents} />
     <Stack.Screen name="BuyNow" component={BuyNow} />
     <Stack.Screen name="EventDetails" component={EventDetails} />
+    <Stack.Screen name="Settings" component={SettingsScreen} />
 
+    <Stack.Screen
+      name="ArtistList"
+      component={ArtistListScreen}
+    />
   </Stack.Navigator>
 );
 
