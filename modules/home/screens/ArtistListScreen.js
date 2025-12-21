@@ -37,7 +37,10 @@ export default function ArtistListScreen() {
                 params: { city, domain },
                 headers: { Authorization: `Bearer ${token}` },
             });
+            console.warn("res", res);
+            console.log("res", res.data);
 
+            console.log("res", res.data.data[0].user.id);
             setArtists(res.data.data || []);
         } catch (err) {
             console.log("Error fetching artists", err);
@@ -47,6 +50,7 @@ export default function ArtistListScreen() {
     };
 
     const renderArtist = ({ item }) => {
+
         return (
             <View style={styles.card}>
                 {/* Purple Banner */}
@@ -89,7 +93,11 @@ export default function ArtistListScreen() {
                 <TouchableOpacity
                     style={styles.viewBtn}
                     onPress={() =>
-                        navigation.navigate("ArtistProfile", { artistId: item.id })
+                        navigation.navigate("ArtistPublicProfile", {
+                            artistId: item.user.id,   // ✅ correct
+                        })
+
+
                     }
                 >
                     <Text style={styles.viewBtnText}>View Profile</Text>
