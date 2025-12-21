@@ -14,7 +14,6 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
 import { uploadImageToS3 } from "../services/imageUploadService";
 
 import RNPickerSelect from "react-native-picker-select";
@@ -126,7 +125,7 @@ export default function SellServiceScreen({ navigation }) {
           form.category === "Other"
             ? form.customCategory.trim()
             : form.category.trim(),
-        imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
+        imagePath: uploadedImageUrl, // images/uuid.jpg ✅
       };
 
       const response = await axios.post(
@@ -153,6 +152,9 @@ export default function SellServiceScreen({ navigation }) {
         customCategory: "",
         imagePath: "",
       });
+
+      navigation.navigate("MarketplaceHome");
+      
     } catch (error) {
       console.log("Sell Service Error:", error.response || error.message);
       const message = error.response?.data?.message || "Something went wrong";

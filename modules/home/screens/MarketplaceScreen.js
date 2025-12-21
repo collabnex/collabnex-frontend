@@ -17,6 +17,10 @@ import { Colors } from "../../global/theme/colors";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 
+const S3_BASE_URL =
+  "https://nidhi-demo-s3-2025.s3.eu-north-1.amazonaws.com";
+
+
 const TABS = {
   PRODUCTS: "PRODUCTS",
   SERVICES: "SERVICES",
@@ -77,8 +81,20 @@ export default function Marketplace({ navigation }) {
     return list;
   }, [baseData, search, sortAsc]);
 
-  const getImage = (path) =>
-    path ? `${API_BASE_URL}/${path}` : "https://via.placeholder.com/300";
+  const getImage = (path) => {
+  if (!path) {
+    return "https://via.placeholder.com/300";
+  }
+
+  // If backend already sent full URL (safe check)
+  if (path.startsWith("http")) {
+    return path;
+  }
+
+  // Build S3 URL from stored key
+  return `${S3_BASE_URL}/${path}`;
+};
+
 
   const handleBuyNow = (item) => {
     if (activeTab === TABS.PRODUCTS) {
