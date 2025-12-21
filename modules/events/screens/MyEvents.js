@@ -20,45 +20,25 @@ const MyEvents = ({ navigation }) => {
 
   const fetchMyEvents = async () => {
     setLoading(true);
-
     try {
-      // 🔐 GET TOKEN (ROBUST)
-      let token = await AsyncStorage.getItem("authToken");
-
-      if (!token) token = await AsyncStorage.getItem("token");
-
-      if (!token) {
-        const userStr = await AsyncStorage.getItem("user");
-        if (userStr) token = JSON.parse(userStr)?.token;
-      }
+      let token =
+        (await AsyncStorage.getItem("authToken")) ||
+        (await AsyncStorage.getItem("token"));
 
       if (!token) {
-        console.warn("No auth token found");
         setEvents([]);
         return;
       }
 
-      // ✅ CORRECT ENDPOINT
       const response = await fetch(`${API_BASE_URL}/events/my`, {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         }
       });
 
-      if (!response.ok) {
-        console.error("Failed to fetch my events:", response.status);
-        setEvents([]);
-        return;
-      }
-
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : [];
-
+      const data = await response.json();
       setEvents(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching my events:", error);
+    } catch {
       setEvents([]);
     } finally {
       setLoading(false);
@@ -66,7 +46,15 @@ const MyEvents = ({ navigation }) => {
   };
 
   const renderEvent = ({ item }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        navigation.navigate("MyEventdetails", {
+          eventId: item.id,
+          eventTitle: item.title
+        })
+      }
+    >
       <Text style={styles.title}>{item.title}</Text>
 
       {item.description ? (
@@ -79,17 +67,16 @@ const MyEvents = ({ navigation }) => {
             📅 {new Date(item.startDatetime).toLocaleDateString("en-GB")}
           </Text>
         )}
-
         <Text style={styles.metaText}>
           👥 {item.availableSeats}/{item.totalSeats}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* 🔝 TOP BUTTONS */}
+      {/* TOP BAR */}
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.activeBtn}>
           <Text style={styles.activeText}>My Events</Text>
@@ -99,17 +86,22 @@ const MyEvents = ({ navigation }) => {
           style={styles.primaryBtn}
           onPress={() => navigation.navigate("AddEvents")}
         >
+        <TouchableOpacity
+    style={styles.button}
+    onPress={() => navigation.navigate("EventsScreen")}
+  ></TouchableOpacity>
+        
+        
           <Text style={styles.primaryText}>Add Event</Text>
         </TouchableOpacity>
       </View>
 
-      {/* LIST */}
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
         <FlatList
           data={events}
-          keyExtractor={(item) => item.id?.toString()}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={renderEvent}
           ListEmptyComponent={
             <Text style={styles.emptyText}>
@@ -122,22 +114,10 @@ const MyEvents = ({ navigation }) => {
   );
 };
 
-/* =========================
-   STYLES
-========================= */
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#F8F9FB"
-  },
+  container: { flex: 1, padding: 16, backgroundColor: "#F8F9FB" },
 
-  /* TOP BAR */
-  topBar: {
-    flexDirection: "row",
-    marginBottom: 16
-  },
+  topBar: { flexDirection: "row", marginBottom: 16 },
   activeBtn: {
     flex: 1,
     paddingVertical: 12,
@@ -146,10 +126,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 8
   },
-  activeText: {
-    fontSize: 16,
-    fontWeight: "700"
-  },
+  activeText: { fontSize: 16, fontWeight: "700" },
   primaryBtn: {
     flex: 1,
     paddingVertical: 12,
@@ -158,38 +135,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 8
   },
-  primaryText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600"
-  },
+  primaryText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
 
-  /* CARD */
   card: {
     backgroundColor: "#FFFFFF",
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2
+    borderRadius: 14,
+    marginBottom: 12
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6
-  },
-  description: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 8
-  },
-  metaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between"
-  },
-  metaText: {
-    fontSize: 13,
-    color: "#4B5563"
-  },
+  title: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
+  description: { fontSize: 14, color: "#6B7280", marginBottom: 8 },
+  metaRow: { flexDirection: "row", justifyContent: "space-between" },
+  metaText: { fontSize: 13, color: "#4B5563" },
+
   emptyText: {
     textAlign: "center",
     marginTop: 40,

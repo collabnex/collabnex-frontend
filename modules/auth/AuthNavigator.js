@@ -15,6 +15,7 @@ import ShowcaseScreen from "../home/screens/ShowcaseScreen";
 import MyEvents from "../events/screens/MyEvents";
 import AddEvents from "../events/screens/addEvents";
 import EventDetails from "../events/screens/Eventdetails";
+import MyEventDetails from "../events/screens/MyEventsdetails";
 import ArtistListScreen from "../home/screens/ArtistListScreen";
 import ArtistPublicProfile from "../home/screens/ArtistPublicProfileScreen";
 const Stack = createNativeStackNavigator();
@@ -33,6 +34,8 @@ const AuthNavigator = () => (
     <Stack.Screen name="BuyNow" component={BuyNow} />
     <Stack.Screen name="EventDetails" component={EventDetails} />
     <Stack.Screen name="Settings" component={SettingsScreen} />
+    <Stack.Screen name="MyEventdetails" component={MyEventDetails} />
+
     <Stack.Screen name="ArtistPublicProfile" component={ArtistPublicProfile} />
     <Stack.Screen
       name="ArtistList"
