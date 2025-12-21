@@ -9,8 +9,8 @@ import { Platform } from "react-native";
 
 const API_BASE_URL =
   Platform.OS === "web"
-    ? "http://localhost:8080/api"       // Web browser uses localhost
-    : "http://192.168.1.46:8080/api";   // Mobile Expo uses your PC IP
+    ? "http://localhost:8080/api"
+    : "http://192.168.1.6:8080/api";  // Works for both Android and iOS physical devices
 
 export { API_BASE_URL };
 

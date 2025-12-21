@@ -8,7 +8,7 @@ import CreateProfile from "../auth/screens/CreateProfile";
 
 import DashboardScreen from "../home/screens/dashboard";
 import HomeTabs from "../home/HomeTabs";
-
+import NearbyArtistsScreen from "../home/screens/NearbyArtistsScreen";
 import BuyNow from "../marketplace/screens/BuyNow";
 import SettingsScreen from "../home/screens/SettingsScreen";
 import ShowcaseScreen from "../home/screens/ShowcaseScreen";
@@ -35,6 +35,10 @@ const AuthNavigator = () => (
     <Stack.Screen name="EventDetails" component={EventDetails} />
     <Stack.Screen name="Settings" component={SettingsScreen} />
     <Stack.Screen name="MyEventdetails" component={MyEventDetails} />
+    <Stack.Screen
+      name="NearbyArtists"
+      component={NearbyArtistsScreen}
+    />
 
     <Stack.Screen name="ArtistPublicProfile" component={ArtistPublicProfile} />
     <Stack.Screen

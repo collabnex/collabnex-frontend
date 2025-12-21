@@ -90,13 +90,11 @@ export default function LoginScreen({ navigation }) {
 
         const profile = profileRes.data.data;
 
-        if (profile?.domain?.trim() === "user") {
-          console.warn("User domain is 'user': " + profile?.domain?.trim());
+        if (profile?.domain?.trim() !== "un_registered") {
           navigation.replace("Home");
         } else {
           navigation.replace("CreateProfile");
         }
-
       } catch {
         navigation.replace("CreateProfile");
       }

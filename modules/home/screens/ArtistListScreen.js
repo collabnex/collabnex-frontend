@@ -37,10 +37,7 @@ export default function ArtistListScreen() {
                 params: { city, domain },
                 headers: { Authorization: `Bearer ${token}` },
             });
-            console.warn("res", res);
-            console.log("res", res.data);
 
-            console.log("res", res.data.data[0].user.id);
             setArtists(res.data.data || []);
         } catch (err) {
             console.log("Error fetching artists", err);
