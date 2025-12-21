@@ -6,8 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
-  Platform
+  Modal
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../global/services/env";
@@ -18,14 +17,18 @@ import { API_BASE_URL } from "../../global/services/env";
 
 const AddEvents = ({ navigation }) => {
   const titleRef = useRef(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
     description: "",
-    location: "",
+    eventType: "OFFLINE",
     startDate: "",
+    startTime: "",
     endDate: "",
-    month: "",
+    endTime: "",
+    location: "",
+    onlineLink: "",
     ticketPrice: "",
     totalSeats: ""
   });
@@ -34,71 +37,62 @@ const AddEvents = ({ navigation }) => {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   /* =========================
+     HELPERS
+  ========================= */
+  const toISO = (date, time) => {
+    if (!date || !time) return null;
+    const d = new Date(`${date}T${time}:00`);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
+
+  /* =========================
      VALIDATION
   ========================= */
-
-  const toISODate = (value) => {
-    const [day, month, year] = value.split("-");
-    return new Date(`${year}-${month}-${day}T00:00:00Z`);
-  };
-
-  const isValidDate = (value) => {
-    if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) return false;
-    const date = toISODate(value);
-    return !isNaN(date.getTime());
-  };
-
-  
-
-  const scrollToFirstInvalid = () => {
-    if (!form.title.trim()) return fieldRefs.title.current?.focus();
-    if (!isValidDate(form.startDate))
-      return fieldRefs.startDate.current?.focus();
-    if (!isValidDate(form.endDate))
-      return fieldRefs.endDate.current?.focus();
-  };
-
   const isFormValid = () => {
     if (!form.title.trim()) return false;
-    if (!form.startDate) return false;
-    if (!form.endDate) return false;
-    if (!form.month) return false;
-    if (new Date(form.endDate) < new Date(form.startDate)) return false;
+    if (!form.startDate || !form.startTime) return false;
+    if (!form.endDate || !form.endTime) return false;
+
+    const start = new Date(`${form.startDate}T${form.startTime}`);
+    const end = new Date(`${form.endDate}T${form.endTime}`);
+    if (end <= start) return false;
+
+    if (form.eventType === "OFFLINE" && !form.location.trim()) return false;
+    if (form.eventType === "ONLINE" && !form.onlineLink.trim()) return false;
+
+    if (!form.totalSeats || Number(form.totalSeats) <= 0) return false;
+
     return true;
   };
 
   /* =========================
      SUBMIT
   ========================= */
-
   const handleSubmit = async () => {
-    if (!isFormValid()) {
-      Alert.alert("Invalid Form", "Please fill all required fields correctly");
-      return;
-    }
+    if (!isFormValid()) return;
 
     const payload = {
       title: form.title,
       description: form.description,
-      locationText: form.location,
-      startDatetime: new Date(form.startDate).toISOString(),
-      endDatetime: new Date(form.endDate).toISOString(),
-      eventMonth: form.month,
+      eventType: form.eventType,
+      startDatetime: toISO(form.startDate, form.startTime),
+      endDatetime: toISO(form.endDate, form.endTime),
+      locationText: form.eventType === "OFFLINE" ? form.location : null,
+      onlineLink: form.eventType === "ONLINE" ? form.onlineLink : null,
       ticketPrice: Number(form.ticketPrice || 0),
-      totalSeats: Number(form.totalSeats || 0),
-      availableSeats: Number(form.totalSeats || 0),
       currency: "INR",
+      totalSeats: Number(form.totalSeats),
+      availableSeats: Number(form.totalSeats),
       status: "PUBLISHED"
     };
 
     try {
-      let token = await AsyncStorage.getItem("authToken");
-      if (!token) token = await AsyncStorage.getItem("token");
+      const token =
+        (await AsyncStorage.getItem("authToken")) ||
+        (await AsyncStorage.getItem("token"));
 
-      if (!token) {
-        Alert.alert("Unauthorized", "Please login again");
-        return;
-      }
+      if (!token) return;
 
       const res = await fetch(`${API_BASE_URL}/events`, {
         method: "POST",
@@ -110,15 +104,9 @@ const AddEvents = ({ navigation }) => {
       });
 
       if (res.ok) {
-        Alert.alert("Success", "Event created", [
-          { text: "OK", onPress: () => navigation.navigate("MyEvents") }
-        ]);
-      } else {
-        Alert.alert("Error", "Failed to create event");
+        setShowSuccessModal(true);
       }
-    } catch (e) {
-      Alert.alert("Error", "Something went wrong");
-    }
+    } catch {}
   };
 
   const formValid = isFormValid();
@@ -126,26 +114,10 @@ const AddEvents = ({ navigation }) => {
   /* =========================
      UI
   ========================= */
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* 🔝 TOP BUTTONS */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("MyEvents")}
-        >
-          <Text style={styles.buttonText}>My Events</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.buttonActive}>
-          <Text style={styles.buttonTextActive}>Add Event</Text>
-        </TouchableOpacity>
-      </View>
-
       <Text style={styles.heading}>Create Event</Text>
 
-      {/* TITLE */}
       <View style={styles.card}>
         <Label text="Event Title *" />
         <TextInput
@@ -156,64 +128,59 @@ const AddEvents = ({ navigation }) => {
         />
       </View>
 
-      {/* DATE PICKERS */}
+      <View style={styles.card}>
+        <Label text="Event Type *" />
+        <View style={styles.row}>
+          {["OFFLINE", "ONLINE"].map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.typeBtn,
+                form.eventType === type && styles.typeBtnActive
+              ]}
+              onPress={() => update("eventType", type)}
+            >
+              <Text
+                style={
+                  form.eventType === type
+                    ? styles.typeTextActive
+                    : styles.typeText
+                }
+              >
+                {type}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       <View style={styles.card}>
         <Label text="Start Date *" />
-        {Platform.OS === "web" ? (
-          <input
-            type="date"
-            style={styles.webInput}
-            value={form.startDate}
-            onChange={(e) => update("startDate", e.target.value)}
-          />
-        ) : (
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-            value={form.startDate}
-            onChangeText={(v) => update("startDate", v)}
-          />
-        )}
-
+        <TextInput
+          style={styles.input}
+          value={form.startDate}
+          onChangeText={(v) => update("startDate", v)}
+        />
+        <Label text="Start Time *" />
+        <TextInput
+          style={styles.input}
+          value={form.startTime}
+          onChangeText={(v) => update("startTime", v)}
+        />
         <Label text="End Date *" />
-        {Platform.OS === "web" ? (
-          <input
-            type="date"
-            style={styles.webInput}
-            value={form.endDate}
-            onChange={(e) => update("endDate", e.target.value)}
-          />
-        ) : (
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-            value={form.endDate}
-            onChangeText={(v) => update("endDate", v)}
-          />
-        )}
+        <TextInput
+          style={styles.input}
+          value={form.endDate}
+          onChangeText={(v) => update("endDate", v)}
+        />
+        <Label text="End Time *" />
+        <TextInput
+          style={styles.input}
+          value={form.endTime}
+          onChangeText={(v) => update("endTime", v)}
+        />
       </View>
 
-      {/* MONTH PICKER */}
-      <View style={styles.card}>
-        <Label text="Event Month *" />
-        {Platform.OS === "web" ? (
-          <input
-            type="month"
-            style={styles.webInput}
-            value={form.month}
-            onChange={(e) => update("month", e.target.value)}
-          />
-        ) : (
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM"
-            value={form.month}
-            onChangeText={(v) => update("month", v)}
-          />
-        )}
-      </View>
-
-      {/* DETAILS */}
       <View style={styles.card}>
         <Label text="Description" />
         <TextInput
@@ -223,22 +190,87 @@ const AddEvents = ({ navigation }) => {
           onChangeText={(v) => update("description", v)}
         />
 
-        <Label text="Location" />
+        {form.eventType === "OFFLINE" && (
+          <>
+            <Label text="Location *" />
+            <TextInput
+              style={styles.input}
+              value={form.location}
+              onChangeText={(v) => update("location", v)}
+            />
+          </>
+        )}
+
+        {form.eventType === "ONLINE" && (
+          <>
+            <Label text="Online Link *" />
+            <TextInput
+              style={styles.input}
+              value={form.onlineLink}
+              onChangeText={(v) => update("onlineLink", v)}
+            />
+          </>
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <Label text="Ticket Price" />
         <TextInput
           style={styles.input}
-          value={form.location}
-          onChangeText={(v) => update("location", v)}
+          keyboardType="numeric"
+          value={form.ticketPrice}
+          onChangeText={(v) => update("ticketPrice", v)}
+        />
+        <Label text="Total Seats *" />
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={form.totalSeats}
+          onChangeText={(v) => update("totalSeats", v)}
         />
       </View>
 
-      {/* SUBMIT */}
       <TouchableOpacity
-        style={[styles.submitBtn, !formValid && styles.submitBtnDisabled]}
+        style={[
+          styles.submitBtn,
+          !formValid && styles.submitBtnDisabled
+        ]}
         disabled={!formValid}
         onPress={handleSubmit}
       >
         <Text style={styles.submitText}>Create Event</Text>
       </TouchableOpacity>
+
+      {/* SUCCESS MODAL */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.successIcon}>🎉</Text>
+            <Text style={styles.modalTitle}>Event Created</Text>
+            <Text style={styles.modalSubtitle}>
+              Your event has been published successfully.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.modalConfirm}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MyEvents" }]
+                });
+              }}
+            >
+              <Text style={styles.confirmText}>OK</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+    style={styles.button}
+    onPress={() => navigation.navigate("EventsScreen")}
+  ></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -246,93 +278,50 @@ const AddEvents = ({ navigation }) => {
 /* =========================
    STYLES
 ========================= */
-
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    backgroundColor: "#F4F6FA"
-  },
+  container: { padding: 16, backgroundColor: "#F4F6FA" },
+  heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
+  card: { backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 16 },
+  label: { fontSize: 14, fontWeight: "600", marginBottom: 6 },
+  input: { backgroundColor: "#F9FAFB", padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 12 },
+  textArea: { height: 80 },
+  row: { flexDirection: "row", gap: 10 },
+  typeBtn: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: "#E5E7EB", alignItems: "center" },
+  typeBtnActive: { backgroundColor: "#007AFF" },
+  typeText: { fontWeight: "600" },
+  typeTextActive: { fontWeight: "700", color: "#FFFFFF" },
+  submitBtn: { backgroundColor: "#007AFF", padding: 16, borderRadius: 14, alignItems: "center" },
+  submitBtnDisabled: { backgroundColor: "#9CA3AF" },
+  submitText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 
-  /* TOP BAR */
-  topBar: {
-    flexDirection: "row",
-    marginBottom: 16
-  },
-  button: {
+  modalOverlay: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#E5E7EB",
-    alignItems: "center",
-    marginRight: 8
-  },
-  buttonActive: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#007AFF",
-    alignItems: "center",
-    marginLeft: 8
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600"
-  },
-  buttonTextActive: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#FFFFFF"
-  },
-
-  heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 16
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6
-  },
-  input: {
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 12
-  },
-  webInput: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 10,
-    border: "1px solid #E5E7EB",
-    marginBottom: 12,
-    fontSize: 15
-  },
-  textArea: {
-    height: 80
-  },
-  submitBtn: {
-    backgroundColor: "#007AFF",
-    padding: 16,
-    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
     alignItems: "center"
   },
-  submitBtnDisabled: {
-    backgroundColor: "#9CA3AF"
+  modalCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 18,
+    padding: 24,
+    width: "85%",
+    alignItems: "center"
   },
-  submitText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700"
-  }
+  successIcon: { fontSize: 42, marginBottom: 8 },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 6 },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 20
+  },
+  modalConfirm: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 36,
+    borderRadius: 12
+  },
+  confirmText: { color: "#FFF", fontWeight: "700", fontSize: 16 }
 });
 
 const Label = ({ text }) => <Text style={styles.label}>{text}</Text>;
