@@ -6,23 +6,12 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Alert,
 } from "react-native";
-
-// ================= DUMMY API HANDLERS =================
-const fetchArtistsByCity = (city) => {
-    Alert.alert("API Call", `Fetch artists from ${city}`);
-    // later:
-    // axios.get(`/api/artists?city=${city}`)
-};
-
-const fetchArtistsByDomain = (domain) => {
-    Alert.alert("API Call", `Fetch artists of domain ${domain}`);
-    // later:
-    // axios.get(`/api/artists?domain=${domain}`)
-};
+import { useNavigation } from "@react-navigation/native";
 
 export default function DashboardScreen() {
+    const navigation = useNavigation();
+
     // ================= CITY DATA =================
     const cities = [
         {
@@ -72,14 +61,13 @@ export default function DashboardScreen() {
     ];
 
     return (
-        <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
-            {/* ================= HEADER ================= */}
+        <ScrollView style={styles.screen}>
             <Text style={styles.title}>Discover Artists</Text>
             <Text style={styles.subtitle}>
                 Find artists by city or creative domain
             </Text>
 
-            {/* ================= FIND BY CITY ================= */}
+            {/* ================= CITY ================= */}
             <Text style={styles.sectionTitle}>Find Artists by City</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -87,7 +75,11 @@ export default function DashboardScreen() {
                     <TouchableOpacity
                         key={index}
                         style={styles.card}
-                        onPress={() => fetchArtistsByCity(city.name)}
+                        onPress={() =>
+                            navigation.navigate("ArtistList", {
+                                city: city.name.toLowerCase(),
+                            })
+                        }
                     >
                         <Image source={{ uri: city.image }} style={styles.image} />
                         <Text style={styles.cardText}>{city.name}</Text>
@@ -95,7 +87,7 @@ export default function DashboardScreen() {
                 ))}
             </ScrollView>
 
-            {/* ================= FIND BY DOMAIN ================= */}
+            {/* ================= DOMAIN ================= */}
             <Text style={styles.sectionTitle}>Find Artists by Domain</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -103,7 +95,11 @@ export default function DashboardScreen() {
                     <TouchableOpacity
                         key={index}
                         style={styles.card}
-                        onPress={() => fetchArtistsByDomain(domain.name)}
+                        onPress={() =>
+                            navigation.navigate("ArtistList", {
+                                domain: domain.name.toLowerCase(),
+                            })
+                        }
                     >
                         <Image source={{ uri: domain.image }} style={styles.image} />
                         <Text style={styles.cardText}>{domain.name}</Text>
@@ -114,31 +110,11 @@ export default function DashboardScreen() {
     );
 }
 
-// ================= STYLES =================
 const styles = StyleSheet.create({
-    screen: {
-        flex: 1,
-        backgroundColor: "#F8F7FF",
-        padding: 16,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: "700",
-        color: "#1E1E2E",
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: "#6B6B80",
-        marginBottom: 20,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: "600",
-        marginBottom: 12,
-        marginTop: 10,
-        color: "#1E1E2E",
-    },
+    screen: { flex: 1, backgroundColor: "#F8F7FF", padding: 16 },
+    title: { fontSize: 28, fontWeight: "700", marginBottom: 4 },
+    subtitle: { fontSize: 14, color: "#6B6B80", marginBottom: 20 },
+    sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
     card: {
         width: 140,
         marginRight: 14,
@@ -147,10 +123,7 @@ const styles = StyleSheet.create({
         elevation: 3,
         overflow: "hidden",
     },
-    image: {
-        width: "100%",
-        height: 100,
-    },
+    image: { width: "100%", height: 100 },
     cardText: {
         textAlign: "center",
         padding: 10,

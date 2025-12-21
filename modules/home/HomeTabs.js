@@ -78,8 +78,8 @@ export default function HomeTabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Showcase" component={ShowcaseScreen} />
       <Tab.Screen name="Market" component={MarketNavigator} />
-      <Tab.Screen name="Collab" component={CollaborationScreen} />
       <Tab.Screen name="Events" component={EventsNavigator} />
+      <Tab.Screen name="Profile" component={CollaborationScreen} />
     </Tab.Navigator>
   );
 }
