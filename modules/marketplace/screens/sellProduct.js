@@ -90,10 +90,10 @@ export default function SellProductForm({ navigation }) {
         price: Number(form.price),
         stock: Number(form.stock),
         category: form.category,
-        imagePath: uploadedImageUrl, // ✅ S3 PUBLIC URL
+        imagePath: uploadedImageUrl, // images/uuid.jpg ✅
       };
 
-      await axios.post(`${API_BASE_URL}/physical-products`, payload, {
+      const response = await axios.post(`${API_BASE_URL}/physical-products`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -101,7 +101,19 @@ export default function SellProductForm({ navigation }) {
       });
 
       Alert.alert("Success", "Product uploaded successfully");
-      navigation.replace("Marketplace");
+           console.log("Response:", response.data);
+            // 🔄 Reset form
+      setForm({
+        title: "",
+        description: "",
+        price: "",
+        stock:"",
+        category: "",
+        imagePath: "",
+      });
+
+      navigation.navigate("MarketplaceHome");
+      
     } catch (err) {
       Alert.alert("Error", "Failed to upload product");
     } finally {

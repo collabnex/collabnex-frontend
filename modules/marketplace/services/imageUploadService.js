@@ -19,22 +19,24 @@ export const getPresignedUrl = async (contentType) => {
     }
   );
 
-  return response.data;
+  return response.data;  // { uploadUrl, fileUrl }
 };
 
 /**
  * Upload image to AWS S3 using presigned URL
+ * ✅ RETURNS RELATIVE PATH (images/uuid.jpg)
  */
 export const uploadImageToS3 = async (imageUri) => {
-  // 1️⃣ Get presigned URL
-  const presignedUrl = await getPresignedUrl("image/jpeg");
+  // 1️⃣ Get presigned URL + imagePath
+  const { uploadUrl, fileUrl } = await getPresignedUrl("image/jpeg");
 
   // 2️⃣ Convert image URI → Blob
   const imageResponse = await fetch(imageUri);
   const imageBlob = await imageResponse.blob();
 
-  // 3️⃣ Upload to S3
-  const uploadResponse = await fetch(presignedUrl, {
+
+  // 3️⃣ Upload to S3 (NO TOKEN)
+  const uploadResponse = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
       "Content-Type": "image/jpeg",
@@ -46,6 +48,6 @@ export const uploadImageToS3 = async (imageUri) => {
     throw new Error("S3 upload failed");
   }
 
-  // 4️⃣ Return PUBLIC S3 URL
-  return presignedUrl.split("?")[0];
+  // 4️⃣ RETURN RELATIVE PATH ONLY
+  return fileUrl; // images/uuid.jpg
 };
