@@ -1,116 +1,245 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../global/services/env";
 
+/* 🎨 CollabNEX Theme */
+const Colors = {
+  primary: "#592FE4",
+  success: "#2E7D32",
+  background: "#F8F7FF",
+  white: "#FFFFFF",
+  textPrimary: "#1E1E2E",
+  textSecondary: "#6B6B80",
+  border: "#E5E4F0",
+};
+
 export default function MyOrdersScreen() {
-  const [orders, setOrders] = useState([]);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOrders();
+    fetchMyOrders();
   }, []);
 
-  const fetchOrders = async () => {
+  /* -------------------------------
+     API
+  -------------------------------- */
+  const fetchMyOrders = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         Alert.alert("Error", "User not logged in");
-        setLoading(false);
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/orders/all`, {
+      const res = await axios.get(`${API_BASE_URL}/orders/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const physicalOrders = Array.isArray(response.data.physicalOrders)
-        ? response.data.physicalOrders
-        : [];
-
-      setOrders(physicalOrders);
-    } catch (error) {
-      console.log("Error fetching orders:", error.response?.data || error);
+      setData(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.log("Fetch orders error:", e.response?.data || e);
       Alert.alert("Error", "Failed to fetch orders");
     } finally {
       setLoading(false);
     }
   };
 
-  const renderOrder = ({ item, index }) => (
-    <View style={styles.orderCard}>
-      <Text style={styles.title}>Order {index + 1}</Text>
+  /* -------------------------------
+     Helpers
+  -------------------------------- */
+  const formatDateTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString() + " • " + d.toLocaleTimeString();
+  };
 
-      <Text style={styles.sectionTitle}>Customer Info</Text>
-      <Text>Name: {String(item.fullName ?? "")}</Text>
-      <Text>Phone: {String(item.phoneNumber ?? "")}</Text>
+  /* -------------------------------
+     Render Card
+  -------------------------------- */
+  const renderItem = ({ item }) => {
+    const isService = !!item.serviceProduct;
+    const service = item.serviceProduct;
+    const product = item.physicalProduct; // future-proof
 
-      <Text>
-        Address: {String(item.addressLine1 ?? "")}
-        {item.addressLine2 ? ", " + String(item.addressLine2) : ""}
-      </Text>
+    return (
+      <View style={styles.card}>
+        {/* HEADER */}
+        <View style={styles.rowBetween}>
+          <Text style={styles.title}>
+            {isService ? service?.title : product?.name}
+          </Text>
 
-      <Text>Landmark: {String(item.landmark ?? "")}</Text>
-
-      <Text>
-        City: {String(item.city ?? "")}
-        {item.state ? ", " + String(item.state) : ""}
-      </Text>
-
-      <Text>Pincode: {String(item.pincode ?? "")}</Text>
-      <Text>Country: {String(item.country ?? "")}</Text>
-
-      <Text style={styles.sectionTitle}>Items</Text>
-
-      {Array.isArray(item.items) && item.items.length > 0 ? (
-        item.items.map((i, idx) => (
-          <View key={`${index}-${idx}`} style={styles.itemRow}>
-            <Text>Product ID: {String(i.productId ?? "")}</Text>
-            <Text>Qty: {String(i.quantity ?? "")}</Text>
+          <View
+            style={[
+              styles.badge,
+              {
+                backgroundColor: isService ? "#EDE9FF" : "#E8F5E9",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.badgeText,
+                { color: isService ? Colors.primary : Colors.success },
+              ]}
+            >
+              {isService ? "ENQUIRY" : "ORDER"}
+            </Text>
           </View>
-        ))
-      ) : (
-        <Text>No items</Text>
-      )}
+        </View>
 
-      <Text style={styles.sectionTitle}>Payment</Text>
-      <Text>Currency: {String(item.currency ?? "")}</Text>
-    </View>
-  );
+        {/* CATEGORY */}
+        <Text style={styles.meta}>
+          {isService ? service?.category : "Physical Product"}
+        </Text>
+
+        {/* PRICE */}
+        <Text style={styles.price}>
+          ₹{isService ? service?.price : product?.price}
+        </Text>
+
+        {/* ARTIST */}
+        <Text style={styles.meta}>
+          Artist:{" "}
+          {isService
+            ? service?.user?.email
+            : product?.seller?.email}
+        </Text>
+
+        {/* MESSAGE (SERVICE ONLY) */}
+        {isService && item.message ? (
+          <Text style={styles.message}>
+            Message: {item.message}
+          </Text>
+        ) : null}
+
+        {/* DELIVERY / QTY */}
+        {isService ? (
+          <Text style={styles.meta}>
+            Delivery Time: {service?.deliveryTimeDays} days
+          </Text>
+        ) : (
+          <Text style={styles.meta}>
+            Quantity: {product?.quantity}
+          </Text>
+        )}
+
+        {/* TIME */}
+        <Text style={styles.time}>
+          {isService ? "Enquired on" : "Ordered on"}{" "}
+          {formatDateTime(item.createdAt)}
+        </Text>
+      </View>
+    );
+  };
+
+  /* -------------------------------
+     UI
+  -------------------------------- */
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text>No enquiries or orders found</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="blue" />
-      ) : orders.length === 0 ? (
-        <Text style={{ textAlign: "center", marginTop: 20 }}>No orders found</Text>
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item, index) => `${item.id ?? index}`}
-          renderItem={renderOrder}
-          contentContainerStyle={{ padding: 10 }}
-        />
-      )}
-    </View>
+    <FlatList
+      data={data}
+      keyExtractor={(item) => String(item.id)}
+      renderItem={renderItem}
+      contentContainerStyle={{ padding: 16 }}
+    />
   );
 }
 
+/* -------------------------------
+   STYLES
+-------------------------------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  orderCard: {
-    backgroundColor: "#f9f9f9",
-    padding: 15,
-    marginVertical: 8,
-    borderRadius: 10,
-    elevation: 2,
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.background,
   },
-  title: { fontSize: 18, fontWeight: "bold" },
-  sectionTitle: { marginTop: 10, fontWeight: "bold", fontSize: 16 },
-  itemRow: {
+
+  card: {
+    backgroundColor: Colors.white,
+    padding: 16,
+    borderRadius: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    flex: 1,
+    marginRight: 10,
+  },
+
+  badge: {
+    paddingHorizontal: 10,
     paddingVertical: 4,
+    borderRadius: 12,
+  },
+
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  meta: {
+    marginTop: 6,
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+
+  price: {
+    marginTop: 8,
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+
+  message: {
+    marginTop: 8,
+    fontStyle: "italic",
+    color: Colors.textPrimary,
+  },
+
+  time: {
+    marginTop: 12,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: "right",
   },
 });

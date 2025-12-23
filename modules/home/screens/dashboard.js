@@ -49,14 +49,14 @@ export default function DashboardScreen() {
 
     /* ================= STATIC DATA ================= */
     const cities = [
-        { name: "Bangalore", img: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220" },
+        { name: "Bangalore", img: "https://images.unsplash.com/photo-1698332137428-3c4296198e8f" },
         { name: "Mumbai", img: "https://images.unsplash.com/photo-1595658658481-d53d3f999875" },
         { name: "Delhi", img: "https://images.unsplash.com/photo-1587474260584-136574528ed5" },
-        { name: "Chennai", img: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d" },
-        { name: "Hyderabad", img: "https://images.unsplash.com/photo-1629196566859-fb66b2c14c24" },
-        { name: "Kolkata", img: "https://images.unsplash.com/photo-1589294371671-6cfc3c4f5b56" },
-        { name: "Pune", img: "https://images.unsplash.com/photo-1606996320250-0c42cce3e6c5" },
-        { name: "Ahmedabad", img: "https://images.unsplash.com/photo-1590142035743-66e97b47b64c" },
+        { name: "Chennai", img: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220" },
+        { name: "Hyderabad", img: "https://images.unsplash.com/photo-1657981630164-769503f3a9a8" },
+        { name: "Kolkata", img: "https://images.unsplash.com/photo-1626198226928-617fc6c6203e" },
+        { name: "Pune", img: "https://images.unsplash.com/photo-1577195943805-d9a2f1c404bd" },
+        { name: "Ahmedabad", img: "https://plus.unsplash.com/premium_photo-1697730464803-fcede713753e" },
         { name: "Jaipur", img: "https://images.unsplash.com/photo-1599661046289-e31897846e41" },
     ];
 
@@ -68,7 +68,7 @@ export default function DashboardScreen() {
         { name: "Actor", img: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e" },
         { name: "Photographer", img: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee" },
         { name: "Designer", img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f" },
-        { name: "Editor", img: "https://images.unsplash.com/photo-1587613991119-46a7f9d1a47b" },
+        { name: "Editor", img: "https://plus.unsplash.com/premium_photo-1663040316559-8684ca45d7e9" },
         { name: "Videographer", img: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d" },
     ];
 
