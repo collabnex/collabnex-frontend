@@ -13,6 +13,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../global/services/env";
 
 /* =========================
+   CONSTANTS (ADDED)
+========================= */
+const BOOKED_EVENTS_KEY = "BOOKED_EVENTS";
+
+/* =========================
    TOKEN HELPER
 ========================= */
 const getAuthToken = async () => {
@@ -50,9 +55,23 @@ const EventsScreen = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null);
 
+  /* ===== ADDED ===== */
+  const [bookedEventIds, setBookedEventIds] = useState([]);
+
   useEffect(() => {
     fetchEvents();
+    loadBookedEvents(); // ADDED
   }, []);
+
+  /* ===== ADDED ===== */
+  const loadBookedEvents = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(BOOKED_EVENTS_KEY);
+      if (stored) {
+        setBookedEventIds(JSON.parse(stored));
+      }
+    } catch {}
+  };
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -93,6 +112,16 @@ const EventsScreen = () => {
 
       if (!response.ok) return;
 
+      /* ===== ADDED ===== */
+      setBookedEventIds((prev) => {
+        const updated = [...new Set([...prev, selectedEventId])];
+        AsyncStorage.setItem(
+          BOOKED_EVENTS_KEY,
+          JSON.stringify(updated)
+        );
+        return updated;
+      });
+
       setShowSuccess(true);
     } catch {}
   };
@@ -102,53 +131,63 @@ const EventsScreen = () => {
     setShowConfirm(true);
   };
 
-  const renderEvent = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.eventTitle}>{item.title}</Text>
-        <StatusBadge status={item.status} />
-      </View>
+  const renderEvent = ({ item }) => {
+    /* ===== ADDED ===== */
+    const isBooked = bookedEventIds.includes(item.id);
 
-      {item.description && (
-        <Text style={styles.eventDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-      )}
-
-      <View style={styles.metaRow}>
-        {item.locationText && (
-          <Text style={styles.metaText}>📍 {item.locationText}</Text>
-        )}
-        {item.startDatetime && (
-          <Text style={styles.metaText}>
-            📅 {formatDate(item.startDatetime)}
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.footerRow}>
-        <View>
-          <Text style={styles.priceText}>₹{item.ticketPrice ?? 0}</Text>
-          <Text style={styles.seatsText}>
-            {item.availableSeats ?? 0}/{item.totalSeats ?? 0} seats
-          </Text>
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.eventTitle}>{item.title}</Text>
+          <StatusBadge status={item.status} />
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.bookBtn,
-            item.availableSeats === 0 && styles.bookBtnDisabled
-          ]}
-          disabled={item.availableSeats === 0}
-          onPress={() => bookEventAndNavigate(item.id)}
-        >
-          <Text style={styles.bookBtnText}>
-            {item.availableSeats === 0 ? "Sold Out" : "Book Now"}
+        {item.description && (
+          <Text style={styles.eventDescription} numberOfLines={2}>
+            {item.description}
           </Text>
-        </TouchableOpacity>
+        )}
+
+        <View style={styles.metaRow}>
+          {item.locationText && (
+            <Text style={styles.metaText}>📍 {item.locationText}</Text>
+          )}
+          {item.startDatetime && (
+            <Text style={styles.metaText}>
+              📅 {formatDate(item.startDatetime)}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.footerRow}>
+          <View>
+            <Text style={styles.priceText}>₹{item.ticketPrice ?? 0}</Text>
+            <Text style={styles.seatsText}>
+              {item.availableSeats ?? 0}/{item.totalSeats ?? 0} seats
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.bookBtn,
+              (item.availableSeats === 0 || isBooked) &&
+                styles.bookBtnDisabled
+            ]}
+            disabled={item.availableSeats === 0 || isBooked}
+            onPress={() => bookEventAndNavigate(item.id)}
+          >
+            <Text style={styles.bookBtnText}>
+              {isBooked
+                ? "Already Booked"
+                : item.availableSeats === 0
+                ? "Sold Out"
+                : "Book Now"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -169,24 +208,20 @@ const EventsScreen = () => {
         >
           <Text style={styles.buttonPrimaryText}>Add Event</Text>
         </TouchableOpacity>
-        
       </View>
 
       {loading ? (
-  <ActivityIndicator size="large" color="#007AFF" />
-) : (
-  <FlatList
-    data={events}
-    keyExtractor={(item) => item.id.toString()}
-    renderItem={renderEvent}
-    ListEmptyComponent={
-      <Text style={styles.emptyText}>
-        No events available
-      </Text>
-    }
-  />
-)}
-
+        <ActivityIndicator size="large" color="#007AFF" />
+      ) : (
+        <FlatList
+          data={events}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderEvent}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No events available</Text>
+          }
+        />
+      )}
 
       {/* CONFIRM MODAL */}
       <Modal visible={showConfirm} transparent animationType="fade">
@@ -363,12 +398,12 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   emptyText: {
-  textAlign: "center",
-  marginTop: 40,
-  fontSize: 16,
-  color: "#6B7280",
-  fontWeight: "600"
-},
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "600"
+  },
 
   cancelText: { fontWeight: "700", color: "#374151" },
   confirmText: { fontWeight: "700", color: "#FFF" },

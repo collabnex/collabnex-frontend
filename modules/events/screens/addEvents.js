@@ -6,10 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Modal
+  Modal,
+  Platform
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../global/services/env";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 /* =========================
    ADD EVENTS SCREEN
@@ -18,6 +20,10 @@ import { API_BASE_URL } from "../../global/services/env";
 const AddEvents = ({ navigation }) => {
   const titleRef = useRef(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState("date");
+  const [activeField, setActiveField] = useState(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -44,6 +50,26 @@ const AddEvents = ({ navigation }) => {
     const d = new Date(`${date}T${time}:00`);
     if (isNaN(d.getTime())) return null;
     return d.toISOString();
+  };
+
+  /* =========================
+     MOBILE DATE PICKER
+  ========================= */
+  const openPicker = (field, mode) => {
+    setActiveField(field);
+    setPickerMode(mode);
+    setShowPicker(true);
+  };
+
+  const onDateTimeChange = (_, selectedDate) => {
+    setShowPicker(false);
+    if (!selectedDate || !activeField) return;
+
+    if (pickerMode === "date") {
+      update(activeField, selectedDate.toISOString().split("T")[0]);
+    } else {
+      update(activeField, selectedDate.toTimeString().slice(0, 5));
+    }
   };
 
   /* =========================
@@ -103,9 +129,7 @@ const AddEvents = ({ navigation }) => {
         body: JSON.stringify(payload)
       });
 
-      if (res.ok) {
-        setShowSuccessModal(true);
-      }
+      if (res.ok) setShowSuccessModal(true);
     } catch {}
   };
 
@@ -154,31 +178,65 @@ const AddEvents = ({ navigation }) => {
         </View>
       </View>
 
+      {/* DATE & TIME */}
       <View style={styles.card}>
         <Label text="Start Date *" />
-        <TextInput
-          style={styles.input}
-          value={form.startDate}
-          onChangeText={(v) => update("startDate", v)}
-        />
+        {Platform.OS === "web" ? (
+          <input
+            type="date"
+            value={form.startDate}
+            onChange={(e) => update("startDate", e.target.value)}
+            style={webInput}
+          />
+        ) : (
+          <TouchableOpacity onPress={() => openPicker("startDate", "date")}>
+            <TextInput style={styles.input} value={form.startDate} editable={false} />
+          </TouchableOpacity>
+        )}
+
         <Label text="Start Time *" />
-        <TextInput
-          style={styles.input}
-          value={form.startTime}
-          onChangeText={(v) => update("startTime", v)}
-        />
+        {Platform.OS === "web" ? (
+          <input
+            type="time"
+            step="300"
+            value={form.startTime}
+            onChange={(e) => update("startTime", e.target.value)}
+            style={webInput}
+          />
+        ) : (
+          <TouchableOpacity onPress={() => openPicker("startTime", "time")}>
+            <TextInput style={styles.input} value={form.startTime} editable={false} />
+          </TouchableOpacity>
+        )}
+
         <Label text="End Date *" />
-        <TextInput
-          style={styles.input}
-          value={form.endDate}
-          onChangeText={(v) => update("endDate", v)}
-        />
+        {Platform.OS === "web" ? (
+          <input
+            type="date"
+            value={form.endDate}
+            onChange={(e) => update("endDate", e.target.value)}
+            style={webInput}
+          />
+        ) : (
+          <TouchableOpacity onPress={() => openPicker("endDate", "date")}>
+            <TextInput style={styles.input} value={form.endDate} editable={false} />
+          </TouchableOpacity>
+        )}
+
         <Label text="End Time *" />
-        <TextInput
-          style={styles.input}
-          value={form.endTime}
-          onChangeText={(v) => update("endTime", v)}
-        />
+        {Platform.OS === "web" ? (
+          <input
+            type="time"
+            step="300"
+            value={form.endTime}
+            onChange={(e) => update("endTime", e.target.value)}
+            style={webInput}
+          />
+        ) : (
+          <TouchableOpacity onPress={() => openPicker("endTime", "time")}>
+            <TextInput style={styles.input} value={form.endTime} editable={false} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.card}>
@@ -231,43 +289,35 @@ const AddEvents = ({ navigation }) => {
       </View>
 
       <TouchableOpacity
-        style={[
-          styles.submitBtn,
-          !formValid && styles.submitBtnDisabled
-        ]}
+        style={[styles.submitBtn, !formValid && styles.submitBtnDisabled]}
         disabled={!formValid}
         onPress={handleSubmit}
       >
         <Text style={styles.submitText}>Create Event</Text>
       </TouchableOpacity>
 
-      {/* SUCCESS MODAL */}
+      {showPicker && Platform.OS !== "web" && (
+        <DateTimePicker
+          value={new Date()}
+          mode={pickerMode}
+          display="default"
+          onChange={onDateTimeChange}
+        />
+      )}
+
       <Modal visible={showSuccessModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.successIcon}>🎉</Text>
             <Text style={styles.modalTitle}>Event Created</Text>
-            <Text style={styles.modalSubtitle}>
-              Your event has been published successfully.
-            </Text>
-
             <TouchableOpacity
               style={styles.modalConfirm}
-              onPress={() => {
-                setShowSuccessModal(false);
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "MyEvents" }]
-                });
-              }}
+              onPress={() =>
+                navigation.reset({ index: 0, routes: [{ name: "MyEvents" }] })
+              }
             >
               <Text style={styles.confirmText}>OK</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-    style={styles.button}
-    onPress={() => navigation.navigate("EventsScreen")}
-  ></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -278,12 +328,27 @@ const AddEvents = ({ navigation }) => {
 /* =========================
    STYLES
 ========================= */
+const webInput = {
+  padding: 12,
+  borderRadius: 10,
+  border: "1px solid #E5E7EB",
+  marginBottom: 12,
+  fontSize: 14
+};
+
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#F4F6FA" },
   heading: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
   card: { backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 16 },
   label: { fontSize: 14, fontWeight: "600", marginBottom: 6 },
-  input: { backgroundColor: "#F9FAFB", padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 12 },
+  input: {
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 12
+  },
   textArea: { height: 80 },
   row: { flexDirection: "row", gap: 10 },
   typeBtn: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: "#E5E7EB", alignItems: "center" },
@@ -293,34 +358,11 @@ const styles = StyleSheet.create({
   submitBtn: { backgroundColor: "#007AFF", padding: 16, borderRadius: 14, alignItems: "center" },
   submitBtnDisabled: { backgroundColor: "#9CA3AF" },
   submitText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  modalCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 18,
-    padding: 24,
-    width: "85%",
-    alignItems: "center"
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center" },
+  modalCard: { backgroundColor: "#FFF", borderRadius: 18, padding: 24, width: "85%", alignItems: "center" },
   successIcon: { fontSize: 42, marginBottom: 8 },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 6 },
-  modalSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    marginBottom: 20
-  },
-  modalConfirm: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 36,
-    borderRadius: 12
-  },
+  modalConfirm: { backgroundColor: "#007AFF", paddingVertical: 12, paddingHorizontal: 36, borderRadius: 12 },
   confirmText: { color: "#FFF", fontWeight: "700", fontSize: 16 }
 });
 
