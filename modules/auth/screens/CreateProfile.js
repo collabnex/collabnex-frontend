@@ -44,34 +44,104 @@ export default function CreateProfile() {
   const [domain, setDomain] = useState(null);
 
   const domainList = [
+    // Performing Arts
     { label: "Singer", value: "Singer" },
     { label: "Dancer", value: "Dancer" },
-    { label: "Painter", value: "Painter" },
     { label: "Actor", value: "Actor" },
+    { label: "Theatre Artist", value: "Theatre Artist" },
+    { label: "Voice Artist", value: "Voice Artist" },
+
+    // Music
     { label: "Musician", value: "Musician" },
+    { label: "Guitarist", value: "Guitarist" },
+    { label: "Pianist", value: "Pianist" },
+    { label: "Drummer", value: "Drummer" },
+    { label: "Music Producer", value: "Music Producer" },
+
+    // Visual Arts
+    { label: "Painter", value: "Painter" },
+    { label: "Sketch Artist", value: "Sketch Artist" },
+    { label: "Digital Artist", value: "Digital Artist" },
+    { label: "Illustrator", value: "Illustrator" },
+    { label: "Calligraphy Artist", value: "Calligraphy Artist" },
+
+    // Media & Content
+    { label: "Photographer", value: "Photographer" },
+    { label: "Videographer", value: "Videographer" },
+    { label: "Film Maker", value: "Film Maker" },
+    { label: "Editor", value: "Editor" },
+    { label: "Content Creator", value: "Content Creator" },
+
+    // Design & Performance
+    { label: "Choreographer", value: "Choreographer" },
+    { label: "Fashion Designer", value: "Fashion Designer" },
+    { label: "Makeup Artist", value: "Makeup Artist" },
+    { label: "Set Designer", value: "Set Designer" },
+    { label: "Art Director", value: "Art Director" },
   ];
+
 
   // ================= SKILLS =================
   const [openSkills, setOpenSkills] = useState(false);
   const [skills, setSkills] = useState([]);
 
   const skillsList = [
-    { label: "Spring Boot", value: "Spring Boot" },
-    { label: "Angular", value: "Angular" },
-    { label: "MySQL", value: "MySQL" },
-    { label: "Product Design", value: "Product Design" },
+    { label: "Singing", value: "Singing" },
+    { label: "Dancing", value: "Dancing" },
+    { label: "Guitar", value: "Guitar" },
+    { label: "Piano", value: "Piano" },
+    { label: "Drums", value: "Drums" },
+    { label: "Violin", value: "Violin" },
+    { label: "Acting", value: "Acting" },
+    { label: "Theatre", value: "Theatre" },
+    { label: "Painting", value: "Painting" },
+    { label: "Sketching", value: "Sketching" },
+    { label: "Digital Art", value: "Digital Art" },
+    { label: "Photography", value: "Photography" },
+    { label: "Videography", value: "Videography" },
+    { label: "Content Creation", value: "Content Creation" },
+    { label: "Music Production", value: "Music Production" },
   ];
+
 
   // ================= TAGS =================
   const [openTags, setOpenTags] = useState(false);
   const [tags, setTags] = useState([]);
 
   const tagsList = [
-    { label: "Creative", value: "Creative" },
-    { label: "Team Player", value: "Team Player" },
-    { label: "Fast Learner", value: "Fast Learner" },
-    { label: "Problem Solver", value: "Problem Solver" },
+    // Experience level
+    { label: "Beginner", value: "Beginner" },
+    { label: "Intermediate", value: "Intermediate" },
+    { label: "Professional", value: "Professional" },
+
+    // Work identity
+    { label: "Freelancer", value: "Freelancer" },
+    { label: "Full-Time Artist", value: "Full-Time Artist" },
+    { label: "Hobbyist", value: "Hobbyist" },
+
+    // Collaboration intent
+    { label: "Collaborator", value: "Collaborator" },
+    { label: "Open to Gigs", value: "Open to Gigs" },
+    { label: "Mentor", value: "Mentor" },
+    { label: "Learner", value: "Learner" },
+
+    // Availability
+    { label: "Available Now", value: "Available Now" },
+    { label: "Part-Time", value: "Part-Time" },
+    { label: "Project-Based", value: "Project-Based" },
+
+    // Work style
+    { label: "Remote-Friendly", value: "Remote-Friendly" },
+    { label: "Studio-Based", value: "Studio-Based" },
+    { label: "Flexible Schedule", value: "Flexible Schedule" },
+
+    // Personality / approach
+    { label: "Disciplined", value: "Disciplined" },
+    { label: "Experimental", value: "Experimental" },
+    { label: "Detail-Oriented", value: "Detail-Oriented" },
+    { label: "Self-Motivated", value: "Self-Motivated" },
   ];
+
 
   // ================= VALIDATION =================
   const validate = () => {
@@ -129,11 +199,7 @@ export default function CreateProfile() {
       skills,
       tags,
       collaborationType: domain,
-      socialLinks: {
-        linkedin: form.linkedin,
-        instagram: form.instagram,
-        website: form.website,
-      },
+
     };
 
     try {

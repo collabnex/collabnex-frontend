@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -53,19 +53,20 @@ export default function BuyNow({ route, navigation }) {
   };
 
   /* -------------------------------
-     VALIDATION (SILENT)
+     VALIDATION (FIXED)
   -------------------------------- */
-  const isValid = useMemo(() => {
-    if (!form.fullName.trim()) return false;
-    if (form.phoneNumber.length !== 10) return false;
-    if (!form.addressLine1.trim()) return false;
-    if (form.pincode.length !== 6) return false;
-    if (!form.city.trim()) return false;
-    if (!form.state.trim()) return false;
-    if (!form.country.trim()) return false;
-    if (!form.quantity || parseInt(form.quantity) < 1) return false;
-    return true;
-  }, [form]);
+  const quantityNumber = Number(form.quantity);
+
+  const isValid =
+    form.fullName.trim().length > 0 &&
+    form.phoneNumber.length === 10 &&
+    form.addressLine1.trim().length > 0 &&
+    form.pincode.length === 6 &&
+    form.city.trim().length > 0 &&
+    form.state.trim().length > 0 &&
+    form.country.trim().length > 0 &&
+    Number.isInteger(quantityNumber) &&
+    quantityNumber >= 1;
 
   /* -------------------------------
      SUBMIT
@@ -88,7 +89,7 @@ export default function BuyNow({ route, navigation }) {
         items: [
           {
             productId: product.id,
-            quantity: parseInt(form.quantity),
+            quantity: quantityNumber,
           },
         ],
       };
@@ -109,7 +110,11 @@ export default function BuyNow({ route, navigation }) {
      UI
   -------------------------------- */
   return (
-    <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.screen}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>Delivery Details</Text>
       <Text style={styles.subtitle}>Complete your order securely</Text>
 
